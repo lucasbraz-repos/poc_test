@@ -12,8 +12,7 @@ def aws(profile, region, *args):
         [
             "aws",
             *args,
-            "--profile",
-            profile,
+            *(["--profile", profile] if profile else []),
             "--region",
             region,
             "--output",
@@ -40,6 +39,9 @@ def identity(profile, region, account):
 
 
 def terraform_environment(profile):
+    if not profile:
+        # GitHub Actions fornece credenciais temporárias por OIDC no ambiente.
+        return os.environ.copy()
     # Captura em memória, nunca imprime ou persiste credenciais. Compatível com aws login.
     result = subprocess.run(
         ["aws", "configure", "export-credentials", "--profile", profile, "--format", "process"],

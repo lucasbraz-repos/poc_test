@@ -164,6 +164,12 @@ python3 tools/exportar_aws.py --profile poc-aws --dataset todos
 
 O comando grava CSV, JSON e dicionário em `outputs_aws/exportacoes/<load_id>/`. As views atuais no Athena selecionam uma única carga publicada. A infraestrutura inclui um workgroup de BI e uma política de leitura agregada, sem atribuição automática a usuários ou conexão automática com ferramentas de BI.
 
+## CI/CD no GitHub
+
+O [GitHub Actions](.github/workflows/cicd.yml) valida todos os pushes e PRs. Após os testes Python/PySpark e a validação Terraform, a `main` implanta automaticamente na AWS por OIDC, atualiza jobs e views e arquiva o commit completo no S3. Não há filtro por pasta. Estado e lock do Terraform ficam em um bucket S3 privado; chaves permanentes não são armazenadas no GitHub.
+
+Fluxo, configuração administrativa, atualização da configuração local e rollback estão em [docs/cicd.md](docs/cicd.md). Alterações de código não reenviam automaticamente os arquivos de dados.
+
 ## Organização do código
 
 | Módulo | Responsabilidade |

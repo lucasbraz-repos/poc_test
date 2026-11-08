@@ -52,7 +52,7 @@ As funções são chamadas dentro do próprio job. `runtime.py` compartilha a se
 
 ## Implantar em uma conta nova
 
-Requisitos locais: AWS CLI v2, Terraform 1.5+ e Python 3.11+. O perfil precisa poder criar os recursos declarados em `infra/terraform/`; para equipes, aplique uma política de implantação revisada pela administração da conta.
+Requisitos locais: AWS CLI v2, Terraform 1.10+ e Python 3.11+. O perfil precisa poder criar os recursos declarados em `infra/terraform/`; para equipes, aplique uma política de implantação revisada pela administração da conta.
 
 1. Autentique o perfil na conta de destino. Com uma versão recente do AWS CLI, `aws login` permite autenticação pelo navegador sem compartilhar chaves na conversa. [Documentação de login](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html).
 2. Execute o deploy com o ID explícito da conta. O script verifica STS antes de qualquer criação e o provider Terraform aceita somente essa conta.
@@ -179,3 +179,7 @@ python3 tools/exportar_aws.py --profile poc-aws --dataset todos
 A verificação confere a release, contagens, universos analíticos e reconciliação financeira dos marts com a fato e a Silver. Não considera uma carga de uma release antiga como validação da nova implantação.
 
 O SDK do Glue pode ter um modelo de `PutObject` anterior ao suporte ao argumento `IfNoneMatch`. O runtime detecta esse caso e adiciona `If-None-Match: *` antes da assinatura da requisição. A condição continua sendo aplicada no S3, conforme a [documentação de escrita condicional](https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes.html). O teste `test_sdk_compat.py` verifica a requisição assinada no SDK da imagem Glue, sem serviços externos.
+
+## Entrega contínua
+
+A `main` é publicada automaticamente pelo GitHub Actions após as verificações. O estado da instalação passou a usar o backend S3 versionado e com lock nativo; o comando de deploy local também utiliza esse backend. Consulte [cicd.md](cicd.md) para autenticação OIDC, bootstrap, conferências e operação.

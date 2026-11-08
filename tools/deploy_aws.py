@@ -6,13 +6,14 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from tools.aws_cli import athena_query, aws, format_error, identity, terraform_environment
-from tools.config import DEFAULT_CONFIG, load_config, validate_config
+from tools.config import DEFAULT_CONFIG, load_config, positive_int, validate_config
 from tools.package_aws import package
 
 
@@ -131,20 +132,35 @@ def assert_deployment_idle(config, profile):
         )
 
 
+def wait_for_idle(config, profile, minutes=0):
+    """Aguarda uma janela livre; erros de credencial/permissão falham imediatamente."""
+    deadline = time.monotonic() + minutes * 60
+    while True:
+        try:
+            assert_deployment_idle(config, profile)
+            return
+        except RuntimeError as error:
+            if time.monotonic() >= deadline:
+                raise
+            print(str(error) + " Nova tentativa em até 30 segundos.", flush=True)
+            time.sleep(min(30, max(0, deadline - time.monotonic())))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Implantar S3, Glue, Data Catalog, Athena e entrada automática."
     )
-    parser.add_argument("--profile", required=True)
+    parser.add_argument("--profile", help="Perfil local; omitir para credenciais OIDC do ambiente")
     parser.add_argument("--account-id", required=True)
     parser.add_argument("--region", default="us-east-1")
     parser.add_argument(
         "--plan-only", action="store_true", help="Validar e salvar plano sem criar recursos"
     )
+    parser.add_argument("--wait-idle-minutes", type=positive_int, default=0)
     args = parser.parse_args(argv)
     identity(args.profile, args.region, args.account_id)
     target = deployment_target(args.profile, args.region, args.account_id)
-    assert_deployment_idle(target, args.profile)
+    wait_for_idle(target, args.profile, args.wait_idle_minutes)
     release = package()
     environment = terraform_environment(args.profile)
     command = ["terraform", "-chdir=" + str(ROOT / "infra/terraform")]
@@ -152,7 +168,7 @@ def main(argv=None):
     def run(*parts, **kwargs):
         return subprocess.run([*command, *parts], env=environment, check=True, **kwargs)
 
-    run("init", "-input=false")
+    run("init", "-input=false", "-lockfile=readonly", "-backend-config=backend.hcl")
     run("validate")
     plan = ROOT / "build/aws/deploy.tfplan"
     log = ROOT / "build/aws/terraform-plan.txt"
@@ -172,7 +188,7 @@ def main(argv=None):
     if args.plan_only:
         print("Plano preparado; nenhum recurso foi criado.")
         return 0
-    assert_deployment_idle(target, args.profile)
+    wait_for_idle(target, args.profile, args.wait_idle_minutes)
     run("apply", "-input=false", "-auto-approve", str(plan))
     outputs = json.loads(run("output", "-json", capture_output=True, text=True).stdout)
     config = validate_config({key: value["value"] for key, value in outputs.items()})

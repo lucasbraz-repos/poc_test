@@ -8,7 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 from cloud.contracts import BRONZE, spark_schema
-from cloud.transforms import build_silver, build_gold, validate
+from cloud.jobs.silver import build_silver
+from cloud.jobs.gold import build_gold, validate
 from pipeline.cleaning import stable_json
 from pipeline.schema import COLUMNS, validate_headers
 

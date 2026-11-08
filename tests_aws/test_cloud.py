@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 from cloud.contracts import TABLES, catalog, fields, load_id, source_id
 from cloud.dispatcher import dispatch
-from cloud.jobs_impl import publish
+from cloud.jobs.gold import publish
 from cloud.reporting import render_report
 
 

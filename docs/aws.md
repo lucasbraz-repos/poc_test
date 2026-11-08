@@ -38,6 +38,18 @@ flowchart LR
 
 Os jobs usam **AWS Glue 5.0 / Spark 3.5.4 / Python 3.11**, com dois workers G.1X por padrão. O código próprio é um ZIP imutável por SHA-256 em `--extra-py-files`; não há instalação de pacotes do PyPI durante as cargas. A imagem oficial do Glue permite testar o mesmo runtime localmente. [Runtimes oficiais](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html), [bibliotecas no Glue](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-python-libraries.html).
 
+## Código de cada job
+
+Cada etapa contém sua implementação diretamente no arquivo executado pelo Glue:
+
+| Arquivo | Implementação |
+|---|---|
+| `cloud/jobs/bronze.py` | Leitura da versão S3, validação do Excel, preservação do original, criação do DataFrame e escrita Bronze. |
+| `cloud/jobs/silver.py` | `clean_partition`, `build_silver` e execução Silver: PySpark para limpeza, deduplicação, conflitos, qualidade e linhagem. |
+| `cloud/jobs/gold.py` | `build_gold`, `validate`, `publish` e execução Gold: fatos, dimensões, agregados, validações e publicação no catálogo. |
+
+As funções são chamadas dentro do próprio job. `runtime.py` compartilha a sessão Spark e o acesso a S3/Glue; `contracts.py` compartilha os schemas; `pipeline/cleaning.py` e os parsers compartilham as regras de normalização com a execução local.
+
 ## Implantar em uma conta nova
 
 Requisitos locais: AWS CLI v2, Terraform 1.5+ e Python 3.11+. O perfil precisa poder criar os recursos declarados em `infra/terraform/`; para equipes, aplique uma política de implantação revisada pela administração da conta.

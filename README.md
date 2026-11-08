@@ -24,6 +24,8 @@ Os dados na AWS ficam em Parquet no S3. SQLite e CSV pertencem à opção local.
 
 A implantação e a execução real dos três jobs foram verificadas, incluindo consultas e reconciliação de saldos no Athena. Consulte [as evidências de validação](docs/validacao-aws.md).
 
+O código de cada etapa está diretamente em `cloud/jobs/bronze.py`, `cloud/jobs/silver.py` e `cloud/jobs/gold.py`, incluindo as transformações PySpark de Silver e Gold. A organização está detalhada em [docs/aws.md](docs/aws.md).
+
 ### Selecionar o arquivo e deixar tudo automático
 
 No Finder, abra a pasta do projeto e dê **dois cliques em `Iniciar Pipeline.command`**. Escolha o arquivo `.xlsx` na janela que aparecer. A pipeline executa todas as etapas e abre o relatório no navegador ao terminar. Não é preciso informar pastas de saída nem iniciar etapas separadamente.

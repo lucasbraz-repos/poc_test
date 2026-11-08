@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+.venv/
+outputs/
+*.zip
+analysis/*.json
+
+# Fontes e saídas locais: não publicar dados de devedores.
+inputs/
+data/
+*.xlsx
+*.xls
+*.csv
+*.sqlite
+*.sqlite3
+*.db
+*.docx
+*.jsonl
+*.parquet
+*.log
+
+# Configurações locais e credenciais.
+.env
+.env.*
+!.env.example
+.DS_Store

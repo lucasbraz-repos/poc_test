@@ -1,0 +1,1086 @@
+{
+  "linhas_originais": {
+    "layer": "bronze",
+    "columns": [
+      {
+        "name": "source_sha256",
+        "type": "string"
+      },
+      {
+        "name": "source_bucket",
+        "type": "string"
+      },
+      {
+        "name": "source_key",
+        "type": "string"
+      },
+      {
+        "name": "source_version_id",
+        "type": "string"
+      },
+      {
+        "name": "sheet",
+        "type": "string"
+      },
+      {
+        "name": "source_row",
+        "type": "bigint"
+      },
+      {
+        "name": "raw_json",
+        "type": "string"
+      },
+      {
+        "name": "formulas_json",
+        "type": "string"
+      },
+      {
+        "name": "date_1904",
+        "type": "boolean"
+      }
+    ]
+  },
+  "registros_tratados": {
+    "layer": "silver",
+    "columns": [
+      {
+        "name": "registro_id",
+        "type": "string"
+      },
+      {
+        "name": "codigo_identificador",
+        "type": "string"
+      },
+      {
+        "name": "cnpj_cedente",
+        "type": "string"
+      },
+      {
+        "name": "numero_contrato",
+        "type": "string"
+      },
+      {
+        "name": "tipo_pessoa",
+        "type": "string"
+      },
+      {
+        "name": "documento_devedor",
+        "type": "string"
+      },
+      {
+        "name": "documento_devedor_valido",
+        "type": "bigint"
+      },
+      {
+        "name": "cnpj_cedente_valido",
+        "type": "bigint"
+      },
+      {
+        "name": "nome_devedor",
+        "type": "string"
+      },
+      {
+        "name": "data_corte",
+        "type": "string"
+      },
+      {
+        "name": "data_nascimento",
+        "type": "string"
+      },
+      {
+        "name": "data_abertura",
+        "type": "string"
+      },
+      {
+        "name": "data_contratacao",
+        "type": "string"
+      },
+      {
+        "name": "data_vencimento",
+        "type": "string"
+      },
+      {
+        "name": "data_ajuizamento",
+        "type": "string"
+      },
+      {
+        "name": "empresa_empregadora",
+        "type": "string"
+      },
+      {
+        "name": "sexo",
+        "type": "string"
+      },
+      {
+        "name": "estado_civil",
+        "type": "string"
+      },
+      {
+        "name": "profissao",
+        "type": "string"
+      },
+      {
+        "name": "nome_mae",
+        "type": "string"
+      },
+      {
+        "name": "situacao_empresa",
+        "type": "string"
+      },
+      {
+        "name": "socio_1_nome",
+        "type": "string"
+      },
+      {
+        "name": "socio_2_nome",
+        "type": "string"
+      },
+      {
+        "name": "rua",
+        "type": "string"
+      },
+      {
+        "name": "numero_endereco",
+        "type": "string"
+      },
+      {
+        "name": "complemento",
+        "type": "string"
+      },
+      {
+        "name": "bairro",
+        "type": "string"
+      },
+      {
+        "name": "cidade",
+        "type": "string"
+      },
+      {
+        "name": "uf",
+        "type": "string"
+      },
+      {
+        "name": "pais",
+        "type": "string"
+      },
+      {
+        "name": "telefone_1_tipo",
+        "type": "string"
+      },
+      {
+        "name": "telefone_2_tipo",
+        "type": "string"
+      },
+      {
+        "name": "produto",
+        "type": "string"
+      },
+      {
+        "name": "subproduto",
+        "type": "string"
+      },
+      {
+        "name": "origem_credito",
+        "type": "string"
+      },
+      {
+        "name": "tipo_garantia",
+        "type": "string"
+      },
+      {
+        "name": "numero_processo",
+        "type": "string"
+      },
+      {
+        "name": "comarca",
+        "type": "string"
+      },
+      {
+        "name": "tipo_acao",
+        "type": "string"
+      },
+      {
+        "name": "ultimo_andamento",
+        "type": "string"
+      },
+      {
+        "name": "cep",
+        "type": "string"
+      },
+      {
+        "name": "obito",
+        "type": "bigint"
+      },
+      {
+        "name": "ajuizado",
+        "type": "bigint"
+      },
+      {
+        "name": "protesto",
+        "type": "bigint"
+      },
+      {
+        "name": "negativado",
+        "type": "bigint"
+      },
+      {
+        "name": "serasa_limpa_nome",
+        "type": "bigint"
+      },
+      {
+        "name": "desenrola",
+        "type": "bigint"
+      },
+      {
+        "name": "possui_avalista",
+        "type": "bigint"
+      },
+      {
+        "name": "possui_garantia",
+        "type": "bigint"
+      },
+      {
+        "name": "garantia_registrada",
+        "type": "bigint"
+      },
+      {
+        "name": "renda_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_original_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_contabil_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_face_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_parcela_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_pago_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_acao_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "dias_atraso_informado",
+        "type": "bigint"
+      },
+      {
+        "name": "parcelas_plano",
+        "type": "bigint"
+      },
+      {
+        "name": "parcelas_pagas",
+        "type": "bigint"
+      },
+      {
+        "name": "parcelas_restantes",
+        "type": "bigint"
+      },
+      {
+        "name": "parcelas_total",
+        "type": "bigint"
+      },
+      {
+        "name": "socio_1_documento",
+        "type": "string"
+      },
+      {
+        "name": "socio_2_documento",
+        "type": "string"
+      },
+      {
+        "name": "documento_avalista",
+        "type": "string"
+      },
+      {
+        "name": "telefone_1_ddd",
+        "type": "string"
+      },
+      {
+        "name": "telefone_1",
+        "type": "string"
+      },
+      {
+        "name": "email_1",
+        "type": "string"
+      },
+      {
+        "name": "telefone_2_ddd",
+        "type": "string"
+      },
+      {
+        "name": "telefone_2",
+        "type": "string"
+      },
+      {
+        "name": "email_2",
+        "type": "string"
+      },
+      {
+        "name": "dias_atraso_calculado",
+        "type": "bigint"
+      },
+      {
+        "name": "faixa_atraso",
+        "type": "string"
+      },
+      {
+        "name": "status_qualidade",
+        "type": "string"
+      },
+      {
+        "name": "linhas_origem",
+        "type": "bigint"
+      },
+      {
+        "name": "quantidade_alertas",
+        "type": "bigint"
+      }
+    ]
+  },
+  "ocorrencias_qualidade": {
+    "layer": "silver",
+    "columns": [
+      {
+        "name": "ocorrencia_id",
+        "type": "string"
+      },
+      {
+        "name": "registro_id",
+        "type": "string"
+      },
+      {
+        "name": "codigo",
+        "type": "string"
+      },
+      {
+        "name": "campo",
+        "type": "string"
+      },
+      {
+        "name": "severidade",
+        "type": "string"
+      },
+      {
+        "name": "detalhe_json",
+        "type": "string"
+      }
+    ]
+  },
+  "linhagem_origem": {
+    "layer": "silver",
+    "columns": [
+      {
+        "name": "source_sha256",
+        "type": "string"
+      },
+      {
+        "name": "source_bucket",
+        "type": "string"
+      },
+      {
+        "name": "source_key",
+        "type": "string"
+      },
+      {
+        "name": "source_version_id",
+        "type": "string"
+      },
+      {
+        "name": "sheet",
+        "type": "string"
+      },
+      {
+        "name": "source_row",
+        "type": "bigint"
+      },
+      {
+        "name": "hash_linha_original",
+        "type": "string"
+      },
+      {
+        "name": "registro_id",
+        "type": "string"
+      }
+    ]
+  },
+  "quarentena": {
+    "layer": "silver",
+    "columns": [
+      {
+        "name": "registro_id",
+        "type": "string"
+      },
+      {
+        "name": "codigo_identificador",
+        "type": "string"
+      },
+      {
+        "name": "cnpj_cedente",
+        "type": "string"
+      },
+      {
+        "name": "numero_contrato",
+        "type": "string"
+      },
+      {
+        "name": "tipo_pessoa",
+        "type": "string"
+      },
+      {
+        "name": "documento_devedor",
+        "type": "string"
+      },
+      {
+        "name": "documento_devedor_valido",
+        "type": "bigint"
+      },
+      {
+        "name": "cnpj_cedente_valido",
+        "type": "bigint"
+      },
+      {
+        "name": "nome_devedor",
+        "type": "string"
+      },
+      {
+        "name": "data_corte",
+        "type": "string"
+      },
+      {
+        "name": "data_nascimento",
+        "type": "string"
+      },
+      {
+        "name": "data_abertura",
+        "type": "string"
+      },
+      {
+        "name": "data_contratacao",
+        "type": "string"
+      },
+      {
+        "name": "data_vencimento",
+        "type": "string"
+      },
+      {
+        "name": "data_ajuizamento",
+        "type": "string"
+      },
+      {
+        "name": "empresa_empregadora",
+        "type": "string"
+      },
+      {
+        "name": "sexo",
+        "type": "string"
+      },
+      {
+        "name": "estado_civil",
+        "type": "string"
+      },
+      {
+        "name": "profissao",
+        "type": "string"
+      },
+      {
+        "name": "nome_mae",
+        "type": "string"
+      },
+      {
+        "name": "situacao_empresa",
+        "type": "string"
+      },
+      {
+        "name": "socio_1_nome",
+        "type": "string"
+      },
+      {
+        "name": "socio_2_nome",
+        "type": "string"
+      },
+      {
+        "name": "rua",
+        "type": "string"
+      },
+      {
+        "name": "numero_endereco",
+        "type": "string"
+      },
+      {
+        "name": "complemento",
+        "type": "string"
+      },
+      {
+        "name": "bairro",
+        "type": "string"
+      },
+      {
+        "name": "cidade",
+        "type": "string"
+      },
+      {
+        "name": "uf",
+        "type": "string"
+      },
+      {
+        "name": "pais",
+        "type": "string"
+      },
+      {
+        "name": "telefone_1_tipo",
+        "type": "string"
+      },
+      {
+        "name": "telefone_2_tipo",
+        "type": "string"
+      },
+      {
+        "name": "produto",
+        "type": "string"
+      },
+      {
+        "name": "subproduto",
+        "type": "string"
+      },
+      {
+        "name": "origem_credito",
+        "type": "string"
+      },
+      {
+        "name": "tipo_garantia",
+        "type": "string"
+      },
+      {
+        "name": "numero_processo",
+        "type": "string"
+      },
+      {
+        "name": "comarca",
+        "type": "string"
+      },
+      {
+        "name": "tipo_acao",
+        "type": "string"
+      },
+      {
+        "name": "ultimo_andamento",
+        "type": "string"
+      },
+      {
+        "name": "cep",
+        "type": "string"
+      },
+      {
+        "name": "obito",
+        "type": "bigint"
+      },
+      {
+        "name": "ajuizado",
+        "type": "bigint"
+      },
+      {
+        "name": "protesto",
+        "type": "bigint"
+      },
+      {
+        "name": "negativado",
+        "type": "bigint"
+      },
+      {
+        "name": "serasa_limpa_nome",
+        "type": "bigint"
+      },
+      {
+        "name": "desenrola",
+        "type": "bigint"
+      },
+      {
+        "name": "possui_avalista",
+        "type": "bigint"
+      },
+      {
+        "name": "possui_garantia",
+        "type": "bigint"
+      },
+      {
+        "name": "garantia_registrada",
+        "type": "bigint"
+      },
+      {
+        "name": "renda_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_original_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_contabil_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_face_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_parcela_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_pago_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_acao_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "dias_atraso_informado",
+        "type": "bigint"
+      },
+      {
+        "name": "parcelas_plano",
+        "type": "bigint"
+      },
+      {
+        "name": "parcelas_pagas",
+        "type": "bigint"
+      },
+      {
+        "name": "parcelas_restantes",
+        "type": "bigint"
+      },
+      {
+        "name": "parcelas_total",
+        "type": "bigint"
+      },
+      {
+        "name": "socio_1_documento",
+        "type": "string"
+      },
+      {
+        "name": "socio_2_documento",
+        "type": "string"
+      },
+      {
+        "name": "documento_avalista",
+        "type": "string"
+      },
+      {
+        "name": "telefone_1_ddd",
+        "type": "string"
+      },
+      {
+        "name": "telefone_1",
+        "type": "string"
+      },
+      {
+        "name": "email_1",
+        "type": "string"
+      },
+      {
+        "name": "telefone_2_ddd",
+        "type": "string"
+      },
+      {
+        "name": "telefone_2",
+        "type": "string"
+      },
+      {
+        "name": "email_2",
+        "type": "string"
+      },
+      {
+        "name": "dias_atraso_calculado",
+        "type": "bigint"
+      },
+      {
+        "name": "faixa_atraso",
+        "type": "string"
+      },
+      {
+        "name": "status_qualidade",
+        "type": "string"
+      },
+      {
+        "name": "linhas_origem",
+        "type": "bigint"
+      },
+      {
+        "name": "quantidade_alertas",
+        "type": "bigint"
+      }
+    ]
+  },
+  "fato_carteira": {
+    "layer": "gold",
+    "columns": [
+      {
+        "name": "registro_id",
+        "type": "string"
+      },
+      {
+        "name": "cedente_id",
+        "type": "string"
+      },
+      {
+        "name": "devedor_id",
+        "type": "string"
+      },
+      {
+        "name": "produto_id",
+        "type": "string"
+      },
+      {
+        "name": "codigo_identificador",
+        "type": "string"
+      },
+      {
+        "name": "numero_contrato",
+        "type": "string"
+      },
+      {
+        "name": "tipo_pessoa",
+        "type": "string"
+      },
+      {
+        "name": "produto",
+        "type": "string"
+      },
+      {
+        "name": "subproduto",
+        "type": "string"
+      },
+      {
+        "name": "uf",
+        "type": "string"
+      },
+      {
+        "name": "data_corte",
+        "type": "string"
+      },
+      {
+        "name": "data_contratacao",
+        "type": "string"
+      },
+      {
+        "name": "data_vencimento",
+        "type": "string"
+      },
+      {
+        "name": "data_ajuizamento",
+        "type": "string"
+      },
+      {
+        "name": "data_nascimento",
+        "type": "string"
+      },
+      {
+        "name": "data_abertura",
+        "type": "string"
+      },
+      {
+        "name": "sexo",
+        "type": "string"
+      },
+      {
+        "name": "estado_civil",
+        "type": "string"
+      },
+      {
+        "name": "profissao",
+        "type": "string"
+      },
+      {
+        "name": "situacao_empresa",
+        "type": "string"
+      },
+      {
+        "name": "obito",
+        "type": "bigint"
+      },
+      {
+        "name": "renda_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_original_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_contabil_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_face_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_parcela_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_pago_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_acao_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "dias_atraso_informado",
+        "type": "bigint"
+      },
+      {
+        "name": "dias_atraso_calculado",
+        "type": "bigint"
+      },
+      {
+        "name": "faixa_atraso",
+        "type": "string"
+      },
+      {
+        "name": "parcelas_plano",
+        "type": "bigint"
+      },
+      {
+        "name": "parcelas_pagas",
+        "type": "bigint"
+      },
+      {
+        "name": "parcelas_restantes",
+        "type": "bigint"
+      },
+      {
+        "name": "parcelas_total",
+        "type": "bigint"
+      },
+      {
+        "name": "ajuizado",
+        "type": "bigint"
+      },
+      {
+        "name": "protesto",
+        "type": "bigint"
+      },
+      {
+        "name": "negativado",
+        "type": "bigint"
+      },
+      {
+        "name": "serasa_limpa_nome",
+        "type": "bigint"
+      },
+      {
+        "name": "desenrola",
+        "type": "bigint"
+      },
+      {
+        "name": "possui_avalista",
+        "type": "bigint"
+      },
+      {
+        "name": "possui_garantia",
+        "type": "bigint"
+      },
+      {
+        "name": "tipo_garantia",
+        "type": "string"
+      },
+      {
+        "name": "garantia_registrada",
+        "type": "bigint"
+      },
+      {
+        "name": "status_qualidade",
+        "type": "string"
+      }
+    ]
+  },
+  "dim_cedente": {
+    "layer": "gold",
+    "columns": [
+      {
+        "name": "cedente_id",
+        "type": "string"
+      },
+      {
+        "name": "cnpj",
+        "type": "string"
+      },
+      {
+        "name": "documento_valido",
+        "type": "bigint"
+      }
+    ]
+  },
+  "dim_devedor": {
+    "layer": "gold",
+    "columns": [
+      {
+        "name": "devedor_id",
+        "type": "string"
+      },
+      {
+        "name": "documento",
+        "type": "string"
+      },
+      {
+        "name": "tipo_pessoa",
+        "type": "string"
+      },
+      {
+        "name": "nome",
+        "type": "string"
+      },
+      {
+        "name": "documento_valido",
+        "type": "bigint"
+      }
+    ]
+  },
+  "dim_produto": {
+    "layer": "gold",
+    "columns": [
+      {
+        "name": "produto_id",
+        "type": "string"
+      },
+      {
+        "name": "produto",
+        "type": "string"
+      },
+      {
+        "name": "subproduto",
+        "type": "string"
+      }
+    ]
+  },
+  "dim_data": {
+    "layer": "gold",
+    "columns": [
+      {
+        "name": "data",
+        "type": "string"
+      },
+      {
+        "name": "ano",
+        "type": "bigint"
+      },
+      {
+        "name": "mes",
+        "type": "bigint"
+      },
+      {
+        "name": "dia",
+        "type": "bigint"
+      },
+      {
+        "name": "trimestre",
+        "type": "bigint"
+      }
+    ]
+  },
+  "mart_resumo_carteira": {
+    "layer": "gold",
+    "columns": [
+      {
+        "name": "data_corte",
+        "type": "string"
+      },
+      {
+        "name": "tipo_pessoa",
+        "type": "string"
+      },
+      {
+        "name": "produto",
+        "type": "string"
+      },
+      {
+        "name": "faixa_atraso",
+        "type": "string"
+      },
+      {
+        "name": "status_qualidade",
+        "type": "string"
+      },
+      {
+        "name": "quantidade",
+        "type": "bigint"
+      },
+      {
+        "name": "saldo_contabil_centavos",
+        "type": "bigint"
+      },
+      {
+        "name": "saldos_ausentes",
+        "type": "bigint"
+      },
+      {
+        "name": "saldos_negativos",
+        "type": "bigint"
+      }
+    ]
+  },
+  "cargas_publicadas": {
+    "layer": "control",
+    "columns": [
+      {
+        "name": "source_sha256",
+        "type": "string"
+      },
+      {
+        "name": "release_id",
+        "type": "string"
+      },
+      {
+        "name": "workflow_run_id",
+        "type": "string"
+      },
+      {
+        "name": "published_at",
+        "type": "string"
+      },
+      {
+        "name": "source_key",
+        "type": "string"
+      },
+      {
+        "name": "source_version_id",
+        "type": "string"
+      },
+      {
+        "name": "registros_total",
+        "type": "bigint"
+      },
+      {
+        "name": "registros_gold",
+        "type": "bigint"
+      },
+      {
+        "name": "aptos",
+        "type": "bigint"
+      },
+      {
+        "name": "revisao",
+        "type": "bigint"
+      },
+      {
+        "name": "quarentena",
+        "type": "bigint"
+      }
+    ]
+  }
+}

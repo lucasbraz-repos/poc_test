@@ -1,12 +1,28 @@
 # Pipeline de dados — carteira para análise e precificação
 
-Pipeline executável construída a partir de `Enunciado_Teste_Tecnico.docx` e `BaseTeste.xlsx`. Entrega análise de qualidade, tratamento auditável, base final em CSV, modelo dimensional em SQLite e relatório HTML offline. Usa **Python 3.11+ e apenas a biblioteca padrão**; não precisa instalar pacotes, subir servidor ou contratar infraestrutura.
+Pipeline executável construída a partir de `Enunciado_Teste_Tecnico.docx` e `BaseTeste.xlsx`. Oferece dois ambientes com as mesmas regras de qualidade: **AWS com S3, Glue/Spark, Glue Data Catalog, Athena e Glue Workflow**, e execução local com Python/SQLite. A execução local usa somente Python 3.11+ e a biblioteca padrão.
 
 O enunciado foi usado como requisito do exercício: explorar, tratar, justificar decisões e entregar a base final. A implementação e as propostas de consumo atendem ao pedido de montar uma pipeline.
 
 Os resultados são gerados localmente em `outputs/<run_id>/` após selecionar a planilha. O repositório contém código, testes e documentação; o Excel original, as bases individuais, o banco e o pacote ZIP não são versionados.
 
 ## Executar
+
+### AWS: selecionar o Excel e processar na nuvem
+
+Consulte [docs/aws.md](docs/aws.md) para implantar a infraestrutura com Terraform. Depois da implantação, dê dois cliques em **`Iniciar Pipeline AWS.command`** e escolha o Excel. O arquivo será enviado ao S3; a fila aciona o Glue Workflow, que processa Bronze, Silver e Gold, valida os dados e publica as tabelas para consulta no Athena. O relatório agregado abre ao concluir.
+
+```bash
+# Implantação única; exige um perfil AWS autenticado na conta indicada.
+python3 tools/deploy_aws.py --profile poc-aws --account-id SEU_ID_DE_12_DIGITOS
+
+# Nas próximas cargas, só é necessário informar o arquivo.
+python3 tools/enviar_aws.py "/caminho/BaseTeste.xlsx" --profile poc-aws
+```
+
+Os dados na AWS ficam em Parquet no S3. SQLite e CSV pertencem à opção local. A conta de destino é conferida antes de qualquer implantação ou upload. As credenciais e os dados não são enviados ao GitHub.
+
+A implantação e a execução real dos três jobs foram verificadas, incluindo consultas e reconciliação de saldos no Athena. Consulte [as evidências de validação](docs/validacao-aws.md).
 
 ### Selecionar o arquivo e deixar tudo automático
 
@@ -58,7 +74,7 @@ Os principais tratamentos são padronização de ausências, identificação por
 
 ## Camadas e modelagem
 
-A implementação segue a arquitetura **Medallion local**. Bronze usa arquivos; Silver e Gold são camadas lógicas no SQLite, com exportações para consumo. Não depende de um serviço de lakehouse.
+A implementação segue a arquitetura **Medallion**. Na AWS, Bronze/Silver/Gold usam Parquet no S3 e databases separados no Glue Data Catalog. Na execução local, Bronze usa arquivos e Silver/Gold são camadas lógicas no SQLite.
 
 ```text
 XLSX -> Bronze: original + linhas originais + SHA-256
@@ -115,7 +131,7 @@ Outras oito consultas estão em [sql/consultas.sql](sql/consultas.sql); o parâm
 python3 -m unittest discover -s tests -v
 ```
 
-São 32 testes de conversão, regras de negócio, integração e entrada simplificada. Incluem seleção e cancelamento do arquivo, abertura do relatório, limites do calendário Excel, datas de dois dígitos, negativos, CPF/CNPJ, e-mail Unicode, isolamento PF/PJ, colisões de chave, quarentena, deduplicação, linhagem, falha de layout sem publicação e reexecução idempotente com detecção de alteração dos artefatos.
+São 32 testes locais de conversão, regras de negócio, integração e entrada simplificada, além de 11 testes de contratos e orquestração AWS em `tests_aws/`. Incluem seleção e cancelamento do arquivo, abertura do relatório, limites do calendário Excel, datas de dois dígitos, negativos, CPF/CNPJ, e-mail Unicode, isolamento PF/PJ, colisões de chave, quarentena, deduplicação, linhagem, falha de layout sem publicação e reexecução idempotente com detecção de alteração dos artefatos.
 
 Cada carga também executa 13 controles de publicação: integridade SQLite e chaves estrangeiras, reconciliação de linhas, unicidade, isolamento PF/PJ, coerência documental, ausência de erros bloqueantes na Gold, elegibilidade e reconciliação dos três valores monetários entre Silver, Gold e quarentena. As oito consultas de consumo foram executadas na base real.
 

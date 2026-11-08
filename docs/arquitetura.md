@@ -1,6 +1,6 @@
-# Arquitetura e proposta de modelagem
+# Arquitetura local e modelagem compartilhada
 
-A entrega usa Python 3.11 ou superior e SQLite, ambos sem pacotes adicionais. O processamento pode ser executado no computador do avaliador, preserva o arquivo original e entrega uma base tratada, um banco consultável e um relatório. O enunciado pede qualidade de dados para apoiar precificação; os dados disponíveis permitem organizar a carteira e medir suas limitações, mas não calcular um preço de compra com fundamento econômico.
+A arquitetura AWS está detalhada em [aws.md](aws.md). Esta seção descreve a opção local e a modelagem compartilhada entre os ambientes. A opção local usa Python 3.11 ou superior e SQLite, ambos sem pacotes adicionais. O processamento pode ser executado no computador do avaliador, preserva o arquivo original e entrega uma base tratada, um banco consultável e um relatório. O enunciado pede qualidade de dados para apoiar precificação; os dados disponíveis permitem organizar a carteira e medir suas limitações, mas não calcular um preço de compra com fundamento econômico.
 
 A execução usa `python3 -m pipeline.run --input /caminho/BaseTeste.xlsx --output outputs`. Cada resultado fica em `outputs/<run_id>/`, com ponteiro em `outputs/latest.json`. A fonte fornecida possui 10.740 linhas e a deduplicação resulta em 10.500 registros tratados. As quantidades de APTO, REVISAO e QUARENTENA são calculadas na execução e constam de `qualidade.json` e dos relatórios.
 

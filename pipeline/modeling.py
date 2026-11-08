@@ -6,9 +6,7 @@ import sqlite3
 from datetime import date
 
 from .cleaning import fingerprint, stable_json
-
-INTEGER_FIELDS = set("dias_atraso_informado dias_atraso_calculado parcelas_plano parcelas_pagas parcelas_restantes parcelas_total obito ajuizado protesto negativado serasa_limpa_nome desenrola possui_avalista possui_garantia garantia_registrada documento_devedor_valido cnpj_cedente_valido linhas_origem quantidade_alertas".split())
-FACT_FIELDS = "codigo_identificador numero_contrato tipo_pessoa produto subproduto uf data_corte data_contratacao data_vencimento data_ajuizamento data_nascimento data_abertura sexo estado_civil profissao situacao_empresa obito renda_centavos valor_original_centavos valor_contabil_centavos valor_face_centavos valor_parcela_centavos valor_pago_centavos valor_acao_centavos dias_atraso_informado dias_atraso_calculado faixa_atraso parcelas_plano parcelas_pagas parcelas_restantes parcelas_total ajuizado protesto negativado serasa_limpa_nome desenrola possui_avalista possui_garantia tipo_garantia garantia_registrada".split()
+from .schema import FACT_FIELDS, INTEGER_FIELDS
 
 
 def column_type(name):

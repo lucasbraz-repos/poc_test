@@ -8,6 +8,8 @@ terraform {
 variable "aws_account_id" { type = string }
 variable "aws_region" { default = "us-east-1" }
 variable "github_repository" { default = "lucasbraz-repos/poc_test" }
+variable "github_owner_id" { default = "246191059" }
+variable "github_repository_id" { default = "1450611105" }
 variable "existing_oidc_provider_arn" { default = "" }
 
 provider "aws" {
@@ -24,6 +26,7 @@ locals {
   state_arn    = "${local.base}:s3:::${local.state_bucket}"
   lake_arn     = "${local.base}:s3:::${local.name}-${var.aws_account_id}-${substr(sha256(var.aws_region), 0, 6)}-*"
   oidc_arn     = var.existing_oidc_provider_arn != "" ? var.existing_oidc_provider_arn : aws_iam_openid_connect_provider.github[0].arn
+  oidc_subject = "repo:${split("/", var.github_repository)[0]}@${var.github_owner_id}/${split("/", var.github_repository)[1]}@${var.github_repository_id}:ref:refs/heads/main"
 }
 
 resource "aws_s3_bucket" "state" {
@@ -69,7 +72,7 @@ resource "aws_iam_role" "deploy" {
     Effect = "Allow", Action = "sts:AssumeRoleWithWebIdentity", Principal = { Federated = local.oidc_arn },
     Condition = { StringEquals = {
       "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com",
-      "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository}:ref:refs/heads/main"
+      "token.actions.githubusercontent.com:sub" = local.oidc_subject
     } }
   }] })
 }

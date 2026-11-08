@@ -13,7 +13,7 @@ O processamento de dados continua sendo disparado pelo upload de um Excel no S3.
 
 ## Identidade e estado
 
-O GitHub assume `github-poc-test-deploy` por até duas horas. A confiança exige audiência `sts.amazonaws.com` e o subject exato `repo:lucasbraz-repos/poc_test:ref:refs/heads/main`. PRs, forks e outras branches não têm autorização para assumir essa role. Não são usados secrets com chaves AWS permanentes. As actions estão fixadas pelo SHA de suas versões oficiais.
+O GitHub assume `github-poc-test-deploy` por até duas horas. A confiança exige audiência `sts.amazonaws.com` e o subject exato `repo:lucasbraz-repos@246191059/poc_test@1450611105:ref:refs/heads/main`. Esse é o formato com IDs imutáveis usado pelo GitHub para este repositório novo. PRs, forks e outras branches não têm autorização para assumir essa role. Não são usados secrets com chaves AWS permanentes. As actions estão fixadas pelo SHA de suas versões oficiais.
 
 As permissões de implantação se limitam aos recursos do projeto e ao arquivo de estado/trava. A role não administra seu próprio trust nem o bucket de estado. O bootstrap desses recursos é separado da infraestrutura aplicada pelo CI, para que um deploy comum não precise alterar sua própria identidade.
 

@@ -7,11 +7,10 @@ Excel de 1900 é rejeitado: 29/02/1900 nunca existiu.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import re
 import unicodedata
-
+from datetime import date, datetime, timedelta
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 NULL_TOKENS = frozenset({"", "N/A", "NA", "NULL", "NONE", "NAN", "S/D", "SEM DADO", "-"})
 VALID_DDDS = frozenset(
@@ -32,7 +31,9 @@ def token(value: object) -> str | None:
     text = clean_text(value)
     if text is None:
         return None
-    return "".join(c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)).upper()
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)
+    ).upper()
 
 
 def normalize_text(value: object) -> str | None:
@@ -92,7 +93,9 @@ def parse_money(value: object) -> int | None:
             if text.count(decimal_separator) != 1:
                 raise ValueError("separadores monetários inconsistentes")
             integer_part, fractional_part = text.rsplit(decimal_separator, 1)
-            if not re.fullmatch(r"[0-9]{1,3}(?:" + re.escape(thousands_separator) + r"[0-9]{3})+", integer_part):
+            if not re.fullmatch(
+                r"[0-9]{1,3}(?:" + re.escape(thousands_separator) + r"[0-9]{3})+", integer_part
+            ):
                 raise ValueError("agrupamento de milhares inválido")
             if not re.fullmatch(r"[0-9]{1,2}", fractional_part):
                 raise ValueError("valor monetário exige no máximo dois decimais")
@@ -100,12 +103,16 @@ def parse_money(value: object) -> int | None:
         elif "." in text or "," in text:
             separator = "." if "." in text else ","
             if text.count(separator) > 1:
-                if not re.fullmatch(r"[0-9]{1,3}(?:" + re.escape(separator) + r"[0-9]{3}){2,}", text):
+                if not re.fullmatch(
+                    r"[0-9]{1,3}(?:" + re.escape(separator) + r"[0-9]{3}){2,}", text
+                ):
                     raise ValueError("agrupamento monetário inválido")
                 number_text = text.replace(separator, "")
             else:
                 integer_part, fractional_part = text.split(separator)
-                if not re.fullmatch(r"[0-9]*", integer_part) or not re.fullmatch(r"[0-9]{1,2}", fractional_part):
+                if not re.fullmatch(r"[0-9]*", integer_part) or not re.fullmatch(
+                    r"[0-9]{1,2}", fractional_part
+                ):
                     raise ValueError("separador monetário ambíguo ou decimais inválidos")
                 number_text = (integer_part or "0") + "." + fractional_part
         else:
@@ -171,11 +178,37 @@ def parse_excel_money(value: object) -> tuple[int | None, bool]:
 
 
 _MONTHS = {
-    "JANEIRO": 1, "FEVEREIRO": 2, "MARCO": 3, "ABRIL": 4, "MAIO": 5, "JUNHO": 6,
-    "JULHO": 7, "AGOSTO": 8, "SETEMBRO": 9, "OUTUBRO": 10, "NOVEMBRO": 11, "DEZEMBRO": 12,
-    "JAN": 1, "FEB": 2, "FEV": 2, "MAR": 3, "APR": 4, "ABR": 4, "MAY": 5, "MAI": 5,
-    "JUN": 6, "JUL": 7, "AUG": 8, "AGO": 8, "SEP": 9, "SET": 9, "OCT": 10, "OUT": 10,
-    "NOV": 11, "DEC": 12, "DEZ": 12,
+    "JANEIRO": 1,
+    "FEVEREIRO": 2,
+    "MARCO": 3,
+    "ABRIL": 4,
+    "MAIO": 5,
+    "JUNHO": 6,
+    "JULHO": 7,
+    "AGOSTO": 8,
+    "SETEMBRO": 9,
+    "OUTUBRO": 10,
+    "NOVEMBRO": 11,
+    "DEZEMBRO": 12,
+    "JAN": 1,
+    "FEB": 2,
+    "FEV": 2,
+    "MAR": 3,
+    "APR": 4,
+    "ABR": 4,
+    "MAY": 5,
+    "MAI": 5,
+    "JUN": 6,
+    "JUL": 7,
+    "AUG": 8,
+    "AGO": 8,
+    "SEP": 9,
+    "SET": 9,
+    "OCT": 10,
+    "OUT": 10,
+    "NOV": 11,
+    "DEC": 12,
+    "DEZ": 12,
 }
 
 
@@ -232,7 +265,9 @@ def parse_date(
     if iso:
         return date(*map(int, iso.groups())).isoformat(), None
     expanded = re.fullmatch(r"([0-9]{1,2})\s+DE\s+([A-Z]+)\s+DE\s+([0-9]{2}|[0-9]{4})", token(text))
-    named = expanded or re.fullmatch(r"([0-9]{1,2})[- /]([A-Z]+)[- /]([0-9]{2}|[0-9]{4})", token(text))
+    named = expanded or re.fullmatch(
+        r"([0-9]{1,2})[- /]([A-Z]+)[- /]([0-9]{2}|[0-9]{4})", token(text)
+    )
     if named:
         day_text, month_text, year_text = named.groups()
         if month_text not in _MONTHS:
@@ -250,7 +285,13 @@ def parse_date(
         day, month = first, second
         if separator == "-" and first <= 12 < second:
             month, day = first, second
-        elif separator in {"/", "-"} and 1 <= first <= 12 and 1 <= second <= 12 and first != second and flag_ambiguous:
+        elif (
+            separator in {"/", "-"}
+            and 1 <= first <= 12
+            and 1 <= second <= 12
+            and first != second
+            and flag_ambiguous
+        ):
             flag = "DATA_AMBIGUA_DIA_PRIMEIRO"
     return date(_year(year_text), month, day).isoformat(), flag
 
@@ -289,11 +330,16 @@ def document_is_valid(value: object) -> bool:
     numbers = [int(c) for c in document]
     if len(document) == 11:
         for length in (9, 10):
-            remainder = sum(n * w for n, w in zip(numbers[:length], range(length + 1, 1, -1))) * 10 % 11
+            remainder = (
+                sum(n * w for n, w in zip(numbers[:length], range(length + 1, 1, -1))) * 10 % 11
+            )
             if numbers[length] != (0 if remainder == 10 else remainder):
                 return False
     else:
-        for length, weights in ((12, (5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)), (13, (6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2))):
+        for length, weights in (
+            (12, (5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)),
+            (13, (6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)),
+        ):
             remainder = sum(n * w for n, w in zip(numbers[:length], weights)) % 11
             if numbers[length] != (0 if remainder < 2 else 11 - remainder):
                 return False
@@ -312,10 +358,18 @@ def normalize_email(value: object) -> str | None:
     if text.count("@") != 1:
         raise ValueError("e-mail inválido")
     local, domain = text.rsplit("@", 1)
-    if not local or len(local) > 64 or local.startswith(".") or local.endswith(".") or ".." in local:
+    if (
+        not local
+        or len(local) > 64
+        or local.startswith(".")
+        or local.endswith(".")
+        or ".." in local
+    ):
         raise ValueError("parte local do e-mail inválida")
     ascii_symbols = frozenset(".!#$%&'*+/=?^_`{|}~-")
-    if any(not (c in ascii_symbols or unicodedata.category(c)[0] in {"L", "M", "N"}) for c in local):
+    if any(
+        not (c in ascii_symbols or unicodedata.category(c)[0] in {"L", "M", "N"}) for c in local
+    ):
         raise ValueError("parte local do e-mail inválida")
     try:
         domain = domain.encode("idna").decode("ascii").lower()

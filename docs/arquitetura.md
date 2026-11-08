@@ -97,3 +97,9 @@ A base atual permite segmentar exposição por atraso, produto e perfil, além d
 ## Referências técnicas
 
 A escolha de SQLite para análise local segue os cenários descritos na [documentação oficial do SQLite](https://www.sqlite.org/whentouse.html). A separação entre fatos e dimensões se apoia nos conceitos de granularidade e relacionamento da [documentação de modelagem estrela da Microsoft](https://learn.microsoft.com/en-us/power-bi/guidance/star-schema). A conversão monetária usa a aritmética decimal documentada pelo [Python](https://docs.python.org/3/library/decimal.html), com armazenamento final em centavos inteiros.
+
+## Produtos analíticos compartilhados
+
+A execução AWS usa S3, Glue PySpark, Data Catalog, Athena e Glue Workflow; a execução local continua disponível como referência e consumo offline. As definições dos três marts são compartilhadas em `pipeline/metrics.py`, com SQL adaptado a cada motor. Detalhes em [metricas.md](metricas.md) e [consumo.md](consumo.md).
+
+Somas financeiras materializadas no SQLite são texto decimal exato; Spark/Athena usam `DECIMAL(38,0)`. Ambos preservam nulos e sinal. Converter para decimal ao calcular médias; não somar distintos, universos contidos ou fotografias de cortes diferentes. Para consultas locais de agregados, consumir os marts evita depender de funções personalizadas na conexão do usuário.

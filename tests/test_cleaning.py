@@ -1,20 +1,40 @@
 """Integração das decisões de limpeza com identidade e valores financeiros."""
 
-from datetime import date
 import unittest
+from datetime import date
 
 from pipeline.cleaning import Cleaner, quality_status
 
 
 def base_record():
     return {
-        "A": "ID001", "B": "04.252.011/0001-10", "N": "04252011000110",
-        "C": "529.982.247-25", "X": "52998224725", "AQ": "529 982 247 25", "BR": "52998224725",
-        "D": "ct001", "P": "CT001", "AR": " CT001 ", "BS": "CT001",
-        "Y": "Pessoa Física", "E": "João Silva", "Z": "JOÃO SILVA", "BT": "João  Silva",
-        "CA": "08-01-2026", "AU": "01-02-2020", "AV": "07-01-2024",
-        "AS": "Crédito pessoal", "AW": "1000,00", "AX": "950,00", "AY": "1100,00",
-        "BG": "12", "BL": "12", "BI": "1", "BK": "11", "AF": "SP",
+        "A": "ID001",
+        "B": "04.252.011/0001-10",
+        "N": "04252011000110",
+        "C": "529.982.247-25",
+        "X": "52998224725",
+        "AQ": "529 982 247 25",
+        "BR": "52998224725",
+        "D": "ct001",
+        "P": "CT001",
+        "AR": " CT001 ",
+        "BS": "CT001",
+        "Y": "Pessoa Física",
+        "E": "João Silva",
+        "Z": "JOÃO SILVA",
+        "BT": "João  Silva",
+        "CA": "08-01-2026",
+        "AU": "01-02-2020",
+        "AV": "07-01-2024",
+        "AS": "Crédito pessoal",
+        "AW": "1000,00",
+        "AX": "950,00",
+        "AY": "1100,00",
+        "BG": "12",
+        "BL": "12",
+        "BI": "1",
+        "BK": "11",
+        "AF": "SP",
     }
 
 
@@ -30,10 +50,26 @@ class CleaningTests(unittest.TestCase):
 
     def test_pf_never_carries_pj_attributes(self):
         raw = base_record()
-        raw.update({"F": "1980-03-10", "G": "Empresa empregadora", "R": "2000-01-01",
-                    "S": "Ativa", "T": "52998224725", "U": "Sócio Um", "M": "1250,50"})
+        raw.update(
+            {
+                "F": "1980-03-10",
+                "G": "Empresa empregadora",
+                "R": "2000-01-01",
+                "S": "Ativa",
+                "T": "52998224725",
+                "U": "Sócio Um",
+                "M": "1250,50",
+            }
+        )
         data, issues = Cleaner(raw).run()
-        for field in ("data_abertura", "situacao_empresa", "socio_1_documento", "socio_1_nome", "socio_2_documento", "socio_2_nome"):
+        for field in (
+            "data_abertura",
+            "situacao_empresa",
+            "socio_1_documento",
+            "socio_1_nome",
+            "socio_2_documento",
+            "socio_2_nome",
+        ):
             self.assertIsNone(data[field], field)
         self.assertEqual(data["data_nascimento"], "1980-03-10")
         self.assertEqual(data["renda_centavos"], 125050)
@@ -41,13 +77,39 @@ class CleaningTests(unittest.TestCase):
 
     def test_pj_never_carries_pf_attributes(self):
         raw = base_record()
-        raw.update({"Y": "PJ", "O": "04252011000110", "X": "04252011000110",
-                    "AQ": "04252011000110", "BR": "04252011000110", "Q": "Empresa Ltda",
-                    "Z": "Empresa Ltda", "BT": "Empresa Ltda", "F": "1980-03-10", "G": "Empregadora",
-                    "H": "Feminino", "I": "Casada", "J": "Professora", "K": "Nome Mãe", "L": "Sim",
-                    "M": "9000,00", "R": "2010-01-01", "S": "Ativa"})
+        raw.update(
+            {
+                "Y": "PJ",
+                "O": "04252011000110",
+                "X": "04252011000110",
+                "AQ": "04252011000110",
+                "BR": "04252011000110",
+                "Q": "Empresa Ltda",
+                "Z": "Empresa Ltda",
+                "BT": "Empresa Ltda",
+                "F": "1980-03-10",
+                "G": "Empregadora",
+                "H": "Feminino",
+                "I": "Casada",
+                "J": "Professora",
+                "K": "Nome Mãe",
+                "L": "Sim",
+                "M": "9000,00",
+                "R": "2010-01-01",
+                "S": "Ativa",
+            }
+        )
         data, issues = Cleaner(raw).run()
-        for field in ("data_nascimento", "empresa_empregadora", "sexo", "estado_civil", "profissao", "nome_mae", "obito", "renda_centavos"):
+        for field in (
+            "data_nascimento",
+            "empresa_empregadora",
+            "sexo",
+            "estado_civil",
+            "profissao",
+            "nome_mae",
+            "obito",
+            "renda_centavos",
+        ):
             self.assertIsNone(data[field], field)
         self.assertEqual(data["nome_devedor"], "EMPRESA LTDA")
         self.assertEqual(data["data_abertura"], "2010-01-01")
@@ -61,7 +123,12 @@ class CleaningTests(unittest.TestCase):
         self.assertEqual(data["valor_original_centavos"], 3315562)
         self.assertEqual(data["uf"], "SP")
         self.assertFalse(any(i["codigo"] == "FORMATO_INVALIDO" for i in issues))
-        self.assertTrue(any(i["codigo"] == "RESIDUO_NUMERICO_EXCEL_AJUSTADO" and i["severidade"] == "INFO" for i in issues))
+        self.assertTrue(
+            any(
+                i["codigo"] == "RESIDUO_NUMERICO_EXCEL_AJUSTADO" and i["severidade"] == "INFO"
+                for i in issues
+            )
+        )
 
     def test_negative_balance_is_never_abs_or_zeroed(self):
         raw = base_record()
@@ -76,7 +143,12 @@ class CleaningTests(unittest.TestCase):
         data, issues = Cleaner(raw).run()
         self.assertEqual(data["documento_devedor"], "52998224725")
         self.assertEqual(quality_status(issues), "QUARENTENA")
-        self.assertTrue(any(i["codigo"] == "COLUNAS_REDUNDANTES_DIVERGENTES" and i["severidade"] == "ERROR" for i in issues))
+        self.assertTrue(
+            any(
+                i["codigo"] == "COLUNAS_REDUNDANTES_DIVERGENTES" and i["severidade"] == "ERROR"
+                for i in issues
+            )
+        )
 
     def test_missing_name_recovers_from_redundant_column(self):
         raw = base_record()

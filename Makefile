@@ -12,3 +12,11 @@ test:
 
 package-aws:
 	$(PYTHON) tools/package_aws.py
+
+.PHONY: lint format
+lint:
+	$(PYTHON) -m ruff check .
+	$(PYTHON) -m ruff format --check .
+
+format:
+	$(PYTHON) -m ruff format .

@@ -30,7 +30,7 @@ flowchart LR
 | Bronze | Job Glue baixa a versão exata do Excel, preserva o original por SHA-256, valida as 79 posições e escreve linhas originais em Parquet. |
 | Silver | Spark aplica `pipeline.cleaning.Cleaner` por partição, deduplica, reconcilia identidades, classifica qualidade e produz ocorrências, linhagem e quarentena. |
 | Gold | Spark constrói fato e dimensões, calcula agregados, valida contagens/chaves/saldos e escreve Parquet Snappy. Não usa SQLite. |
-| Catálogo | Quatro databases: Bronze, Silver, Gold e controle. Doze tabelas com schema explícito e partição `load_id`. Não depende de crawler ou `MSCK REPAIR TABLE`. |
+| Catálogo | Quatro databases: Bronze, Silver, Gold e controle. Quatorze tabelas com schema explícito e partição `load_id`. Não depende de crawler ou `MSCK REPAIR TABLE`. |
 | Athena | Workgroup com resultados criptografados, métricas e limite de 1 GiB lido por consulta. Views criadas automaticamente na implantação. |
 | Glue Workflow | Três jobs sequenciais. Silver só inicia após Bronze ter sucesso; Gold só inicia após Silver. Uma execução simultânea, timeout de 30 minutos por job e uma repetição automática por job. |
 | Entrada | Notificação `ObjectCreated` de `landing/*.xlsx` → SQS → Lambda. A fila aguarda quando o workflow estiver ocupado. Falhas de entrega seguem para DLQ após as tentativas configuradas. |
@@ -160,3 +160,22 @@ python3 tools/verificar_aws.py --profile poc-aws
 O verificador compara as contagens de Bronze, Silver, Gold, aptos e quarentena com o manifesto e reconcilia as três medidas monetárias por consultas SQL no Athena. Ele deve ser executado após a publicação da carga.
 
 Os arquivos de infraestrutura descrevem a implantação; a confirmação de execução real precisa vir dos serviços (Glue, S3 e consulta Athena). Não considere uma validação local como prova de que um workflow na conta AWS teve sucesso.
+
+## Refatoração e operação de releases
+
+Os 14 objetos físicos incluem três marts Gold com definições compartilhadas com o SQLite. Valores individuais usam centavos inteiros de 64 bits; somas dos marts usam `DECIMAL(38,0)` no Spark/Athena. O SQLite materializa essas somas como texto decimal exato para não exceder seu limite de inteiro. Médias e percentuais são calculados com denominador explícito na apresentação.
+
+Bronze lê a planilha em streaming antes da conversão Spark; Silver interpreta o resultado das regras uma vez; Gold usa hashes nativos, dimensões com validação de unicidade e referências e ações consolidadas para reconciliação. `shuffle_partitions` e `output_partitions` são parâmetros Terraform ajustáveis ao volume. A configuração inicial pequena deve ser medida novamente ao aumentar arquivos ou concorrência.
+
+A publicação registra um ponteiro de preparação imutável antes das partições. Tentativas seguintes reutilizam a localização original, sem redirecionar partições publicadas. O controle continua sendo registrado por último. O deploy recusa workflows ou jobs ativos (incluindo tentativas) e mensagens pendentes na fila antes de planejar e aplicar; essa verificação não é um bloqueio atômico de novos uploads. Faça atualizações em janela sem novas entradas e com a fila drenada.
+
+O workgroup `-bi` e a política `-bi-read` são preparados para consultas dos marts e controle, com resultados separados em `results/bi/`. A política não é anexada automaticamente. Conexão de BI e permissões efetivas de uma identidade consumidora precisam de configuração própria; a implantação não publica um dashboard externo.
+
+```bash
+python3 tools/verificar_aws.py --profile poc-aws
+python3 tools/exportar_aws.py --profile poc-aws --dataset todos
+```
+
+A verificação confere a release, contagens, universos analíticos e reconciliação financeira dos marts com a fato e a Silver. Não considera uma carga de uma release antiga como validação da nova implantação.
+
+O SDK do Glue pode ter um modelo de `PutObject` anterior ao suporte ao argumento `IfNoneMatch`. O runtime detecta esse caso e adiciona `If-None-Match: *` antes da assinatura da requisição. A condição continua sendo aplicada no S3, conforme a [documentação de escrita condicional](https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes.html). O teste `test_sdk_compat.py` verifica a requisição assinada no SDK da imagem Glue, sem serviços externos.

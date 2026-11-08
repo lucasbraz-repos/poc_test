@@ -1,20 +1,33 @@
 """Leitor streaming de XLSX: preserva valores e posições, sem dependências externas."""
+
 from __future__ import annotations
 
 import posixpath
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from zipfile import ZipFile
+from zipfile import BadZipFile, ZipFile
 
 NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+MAX_UNCOMPRESSED_BYTES = 512 * 1024 * 1024
+MAX_CELL_CHARACTERS = 32767
 
 
 class Workbook:
-    def __init__(self, path: Path, sheet: str | None = None):
+    def __init__(
+        self, path: Path, sheet: str | None = None, *, max_uncompressed_bytes=MAX_UNCOMPRESSED_BYTES
+    ):
+        try:
+            self._initialize(path, sheet, max_uncompressed_bytes)
+        except (BadZipFile, KeyError, ET.ParseError, StopIteration, IndexError) as error:
+            raise ValueError("Arquivo XLSX inválido ou estrutura OOXML incompleta.") from error
+
+    def _initialize(self, path, sheet, max_uncompressed_bytes):
         self.path = Path(path)
         with ZipFile(self.path) as archive:
+            if sum(item.file_size for item in archive.infolist()) > max_uncompressed_bytes:
+                raise ValueError("O XLSX excede o limite de conteúdo descompactado.")
             root = ET.fromstring(archive.read("xl/workbook.xml"))
             props = root.find("m:workbookPr", NS)
             self.date_1904 = props is not None and props.get("date1904") in {"1", "true"}
@@ -28,13 +41,17 @@ class Workbook:
             relationships = ET.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
             rel = next(r for r in relationships if r.get("Id") == selected.get(f"{{{REL}}}id"))
             target = rel.get("Target", "")
-            self.sheet_path = target.lstrip("/") if target.startswith("/") else posixpath.normpath("xl/" + target)
+            self.sheet_path = (
+                target.lstrip("/") if target.startswith("/") else posixpath.normpath("xl/" + target)
+            )
             self.shared = []
             if "xl/sharedStrings.xml" in archive.namelist():
                 with archive.open("xl/sharedStrings.xml") as stream:
                     for _, element in ET.iterparse(stream, events=("end",)):
                         if element.tag == f"{{{NS['m']}}}si":
-                            self.shared.append("".join(t.text or "" for t in element.findall(".//m:t", NS)))
+                            self.shared.append(
+                                "".join(t.text or "" for t in element.findall(".//m:t", NS))
+                            )
                             element.clear()
         first = next(self.rows(), None)
         if first is None or first[0] != 1:
@@ -43,29 +60,58 @@ class Workbook:
 
     def rows(self):
         """Yield (linha_excel, {letra_coluna: valor_original}, colunas_com_formula)."""
+        try:
+            yield from self._rows()
+        except (BadZipFile, KeyError, ET.ParseError, IndexError) as error:
+            raise ValueError(
+                "Não foi possível ler as linhas: XLSX inválido ou incompleto."
+            ) from error
+
+    def _rows(self):
+        previous = 0
         with ZipFile(self.path) as archive, archive.open(self.sheet_path) as stream:
             for _, element in ET.iterparse(stream, events=("end",)):
                 if element.tag != f"{{{NS['m']}}}row":
                     continue
+                number = int(element.get("r", "0"))
+                if not previous < number <= 1_048_576:
+                    raise ValueError(
+                        "As linhas do XLSX precisam de referências únicas e ordenadas."
+                    )
+                previous = number
                 values, formulas = {}, []
                 for cell in element.findall("m:c", NS):
                     reference = cell.get("r", "")
-                    match = re.match(r"[A-Z]+", reference)
-                    if not match:
+                    match = re.fullmatch(r"([A-Z]{1,3})([1-9][0-9]*)", reference)
+                    if not match or int(match.group(2)) != number:
                         raise ValueError(f"Célula sem referência de coluna: {reference!r}")
-                    column = match.group()
+                    column = match.group(1)
+                    if column in values:
+                        raise ValueError("O XLSX contém duas células na mesma posição.")
                     node = cell.find("m:v", NS)
                     value = node.text if node is not None else None
                     kind = cell.get("t")
                     if kind == "s" and value is not None:
-                        value = self.shared[int(value)]
+                        index = int(value)
+                        if not 0 <= index < len(self.shared):
+                            raise ValueError("Referência inválida a texto compartilhado no XLSX.")
+                        value = self.shared[index]
                     elif kind == "inlineStr":
                         value = "".join(t.text or "" for t in cell.findall(".//m:t", NS))
                     elif kind == "e":
                         value = f"#EXCEL_ERROR:{value}"
+                    if value is not None and len(value) > MAX_CELL_CHARACTERS:
+                        raise ValueError("Uma célula excede o limite de caracteres suportado.")
+                    if (
+                        number != 1
+                        and hasattr(self, "headers")
+                        and column not in self.headers
+                        and value is not None
+                    ):
+                        raise ValueError(f"Coluna {column} sem cabeçalho na origem.")
                     if cell.find("m:f", NS) is not None:
                         formulas.append(column)
                     values[column] = value
                 if any(v is not None and str(v).strip() for v in values.values()):
-                    yield int(element.get("r", "0")), values, formulas
+                    yield number, values, formulas
                 element.clear()

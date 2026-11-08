@@ -1,9 +1,10 @@
 """Empacota somente código; não inclui credenciais, planilha nem resultados."""
+
 import hashlib
 import json
 import sys
 from pathlib import Path
-from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -11,6 +12,7 @@ sys.path.insert(0, str(ROOT))
 
 def package():
     from cloud.contracts import catalog
+
     output = ROOT / "build/aws"
     output.mkdir(parents=True, exist_ok=True)
     with ZipFile(output / "pipeline.zip", "w", compression=ZIP_DEFLATED) as archive:
@@ -24,7 +26,9 @@ def package():
                 archive.writestr(info, path.read_bytes())
     release = hashlib.sha256((output / "pipeline.zip").read_bytes()).hexdigest()
     (output / "release.json").write_text(json.dumps({"release_id": release}, indent=2) + "\n")
-    (ROOT / "infra/terraform/catalog.json").write_text(json.dumps(catalog(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (ROOT / "infra/terraform/catalog.json").write_text(
+        json.dumps(catalog(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return release
 
 

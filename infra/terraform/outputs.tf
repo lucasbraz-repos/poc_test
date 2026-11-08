@@ -9,3 +9,5 @@ output "account_id" { value = var.aws_account_id }
 output "release_id" { value = var.release_id }
 output "queue_url" { value = aws_sqs_queue.input.url }
 output "dead_letter_queue_url" { value = aws_sqs_queue.dead_letter.url }
+output "max_source_bytes" { value = var.max_source_bytes }
+output "max_source_rows" { value = var.max_source_rows }

@@ -1,13 +1,13 @@
 """Integração real XLSX→SQLite/CSV e publicação, sem usar os dados pessoais da fonte."""
 
-from copy import deepcopy
 import csv
 import hashlib
 import json
-from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from copy import deepcopy
+from pathlib import Path
 from xml.etree.ElementTree import Element, SubElement, tostring
 from zipfile import ZipFile
 
@@ -26,9 +26,15 @@ def synthetic_xlsx(path, records, headers=None):
     sheets = SubElement(workbook, "sheets")
     SubElement(sheets, "sheet", {"name": "Carteira", "sheetId": "1", "r:id": "rId1"})
     relationships = Element("Relationships", {"xmlns": PKG_REL_NS})
-    SubElement(relationships, "Relationship", {
-        "Id": "rId1", "Type": REL_NS + "/worksheet", "Target": "worksheets/sheet1.xml",
-    })
+    SubElement(
+        relationships,
+        "Relationship",
+        {
+            "Id": "rId1",
+            "Type": REL_NS + "/worksheet",
+            "Target": "worksheets/sheet1.xml",
+        },
+    )
     worksheet = Element("worksheet", {"xmlns": MAIN_NS})
     data = SubElement(worksheet, "sheetData")
     for row_number, values in enumerate([headers, *records], 1):
@@ -50,14 +56,35 @@ def synthetic_xlsx(path, records, headers=None):
 
 def valid_record(**changes):
     raw = {
-        "A": "ID001", "B": "11.222.333/0001-81", "N": "11222333000181",
-        "C": "529.982.247-25", "X": "52998224725", "AQ": "52998224725", "BR": "52998224725",
-        "D": "ct001", "P": "CT001", "AR": "CT001", "BS": "CT001",
-        "Y": "PF", "E": "Pessoa Teste", "Z": "PESSOA TESTE", "BT": "Pessoa Teste",
-        "AO": "PESSOA.TESTE@EXAMPLE.COM", "CA": "08-01-2026",
-        "AU": "2020-01-01", "AV": "2026-07-01", "BF": "31", "AS": "Crédito pessoal",
-        "AW": "1.000,00", "AX": "950,00", "AY": "1100.00", "AF": "SP",
-        "BG": "12", "BL": "12", "BI": "1", "BK": "11",
+        "A": "ID001",
+        "B": "11.222.333/0001-81",
+        "N": "11222333000181",
+        "C": "529.982.247-25",
+        "X": "52998224725",
+        "AQ": "52998224725",
+        "BR": "52998224725",
+        "D": "ct001",
+        "P": "CT001",
+        "AR": "CT001",
+        "BS": "CT001",
+        "Y": "PF",
+        "E": "Pessoa Teste",
+        "Z": "PESSOA TESTE",
+        "BT": "Pessoa Teste",
+        "AO": "PESSOA.TESTE@EXAMPLE.COM",
+        "CA": "08-01-2026",
+        "AU": "2020-01-01",
+        "AV": "2026-07-01",
+        "BF": "31",
+        "AS": "Crédito pessoal",
+        "AW": "1.000,00",
+        "AX": "950,00",
+        "AY": "1100.00",
+        "AF": "SP",
+        "BG": "12",
+        "BL": "12",
+        "BI": "1",
+        "BK": "11",
     }
     raw.update(changes)
     return raw
@@ -94,9 +121,14 @@ class PipelineIntegrationTests(unittest.TestCase):
         self.assertTrue(all(summary["controls"].values()))
         db = self.db(target)
         self.assertEqual(db.execute("SELECT COUNT(*) FROM linhagem_origem").fetchone()[0], 3)
-        self.assertEqual(db.execute("SELECT linhas_origem FROM registros_tratados").fetchone()[0], 3)
+        self.assertEqual(
+            db.execute("SELECT linhas_origem FROM registros_tratados").fetchone()[0], 3
+        )
         self.assertEqual(db.execute("SELECT COUNT(*) FROM fato_carteira").fetchone()[0], 1)
-        self.assertEqual(db.execute("SELECT SUM(valor_contabil_centavos) FROM fato_carteira").fetchone()[0], 95000)
+        self.assertEqual(
+            db.execute("SELECT SUM(valor_contabil_centavos) FROM fato_carteira").fetchone()[0],
+            95000,
+        )
         with (target / "base_tratada.csv").open(encoding="utf-8-sig", newline="") as stream:
             rows = list(csv.DictReader(stream, delimiter=";"))
         self.assertEqual(len(rows), 1)
@@ -113,7 +145,10 @@ class PipelineIntegrationTests(unittest.TestCase):
         codes = {r[0] for r in db.execute("SELECT codigo FROM ocorrencias_qualidade")}
         self.assertIn("VALOR_MONETARIO_NEGATIVO", codes)
         self.assertIn("ATRASO_RECALCULADO", codes)
-        self.assertEqual(db.execute("SELECT SUM(valor_original_centavos) FROM fato_carteira").fetchone()[0], -125050)
+        self.assertEqual(
+            db.execute("SELECT SUM(valor_original_centavos) FROM fato_carteira").fetchone()[0],
+            -125050,
+        )
 
     def test_conflicting_business_key_quarantines_every_candidate(self):
         target = self.execute([valid_record(), valid_record(A="ID002", AX="900,00")])
@@ -122,9 +157,15 @@ class PipelineIntegrationTests(unittest.TestCase):
         self.assertEqual(db.execute("SELECT COUNT(*) FROM vw_quarentena").fetchone()[0], 2)
         self.assertEqual(db.execute("SELECT COUNT(*) FROM fato_carteira").fetchone()[0], 0)
         self.assertEqual(db.execute("SELECT COUNT(*) FROM dim_devedor").fetchone()[0], 0)
-        self.assertEqual(db.execute("SELECT SUM(valor_contabil_centavos) FROM vw_quarentena").fetchone()[0], 185000)
-        self.assertEqual(db.execute("""SELECT COUNT(DISTINCT registro_id) FROM ocorrencias_qualidade
-            WHERE codigo='CHAVE_NEGOCIO_CONFLITANTE' AND severidade='ERROR'""").fetchone()[0], 2)
+        self.assertEqual(
+            db.execute("SELECT SUM(valor_contabil_centavos) FROM vw_quarentena").fetchone()[0],
+            185000,
+        )
+        self.assertEqual(
+            db.execute("""SELECT COUNT(DISTINCT registro_id) FROM ocorrencias_qualidade
+            WHERE codigo='CHAVE_NEGOCIO_CONFLITANTE' AND severidade='ERROR'""").fetchone()[0],
+            2,
+        )
         self.assertTrue((target / "relatorio.html").is_file())
 
     def test_wrong_layout_cannot_replace_an_existing_published_run(self):
@@ -133,11 +174,16 @@ class PipelineIntegrationTests(unittest.TestCase):
         changed_headers = dict(COLUMNS)
         changed_headers["CA"] = "Outro campo"
         synthetic_xlsx(self.source, [valid_record()], changed_headers)
-        with self.assertLogs("pipeline", level="ERROR"), self.assertRaisesRegex(ValueError, "Layout"):
+        with (
+            self.assertLogs("pipeline", level="ERROR"),
+            self.assertRaisesRegex(ValueError, "Layout"),
+        ):
             run_pipeline(self.source, self.outputs)
         self.assertEqual((self.outputs / "latest.json").read_bytes(), before)
         self.assertTrue((published / "manifest.json").is_file())
-        visible_runs = [p for p in self.outputs.iterdir() if p.is_dir() and not p.name.startswith(".")]
+        visible_runs = [
+            p for p in self.outputs.iterdir() if p.is_dir() and not p.name.startswith(".")
+        ]
         self.assertEqual(visible_runs, [published])
 
     def test_missing_input_and_empty_workbook_do_not_publish(self):
@@ -145,10 +191,15 @@ class PipelineIntegrationTests(unittest.TestCase):
             run_pipeline(self.source, self.outputs)
         self.assertFalse(self.outputs.exists())
         synthetic_xlsx(self.source, [])
-        with self.assertLogs("pipeline", level="ERROR"), self.assertRaisesRegex(ValueError, "sem registros"):
+        with (
+            self.assertLogs("pipeline", level="ERROR"),
+            self.assertRaisesRegex(ValueError, "sem registros"),
+        ):
             run_pipeline(self.source, self.outputs)
         self.assertFalse((self.outputs / "latest.json").exists())
-        self.assertFalse(any(p.is_dir() and not p.name.startswith(".") for p in self.outputs.iterdir()))
+        self.assertFalse(
+            any(p.is_dir() and not p.name.startswith(".") for p in self.outputs.iterdir())
+        )
 
     def test_identical_run_reuses_verified_artifacts_and_rejects_modification(self):
         target = self.execute([valid_record()])

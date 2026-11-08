@@ -172,6 +172,8 @@ resource "aws_glue_job" "stage" {
     "--CONTROL_DATABASE"             = aws_glue_catalog_database.layer["control"].name
     "--MAX_SOURCE_BYTES"             = tostring(var.max_source_bytes)
     "--MAX_SOURCE_ROWS"              = tostring(var.max_source_rows)
+    "--SHUFFLE_PARTITIONS"           = tostring(var.shuffle_partitions)
+    "--OUTPUT_PARTITIONS"            = tostring(var.output_partitions)
   }
   depends_on = [aws_iam_role_policy.glue]
 }

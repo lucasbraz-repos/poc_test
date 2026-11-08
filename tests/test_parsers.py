@@ -1,13 +1,24 @@
 """Casos que protegem decisões de interpretação, não apenas a implementação."""
 
+import unittest
 from datetime import date
 from decimal import Decimal
-import unittest
 
 from pipeline.parsers import (
-    clean_text, digits, document_is_valid, normalize_ddd, normalize_email,
-    normalize_phone, normalize_text, parse_bool, parse_date, parse_integer,
-    parse_excel_money, parse_money, parse_person_type, token,
+    clean_text,
+    digits,
+    document_is_valid,
+    normalize_ddd,
+    normalize_email,
+    normalize_phone,
+    normalize_text,
+    parse_bool,
+    parse_date,
+    parse_excel_money,
+    parse_integer,
+    parse_money,
+    parse_person_type,
+    token,
 )
 
 
@@ -20,9 +31,18 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(token("Pessoa Física"), "PESSOA FISICA")
 
     def test_money_preserves_exact_cents_and_sign(self):
-        values = {"R$ 1.234,56": 123456, "1,234.56": 123456, "1234,56": 123456,
-                  "1234.56": 123456, "(8439.11)": -843911, "-12,50": -1250,
-                  "(0.00)": 0, "0": 0, "1.234.567": 123456700, ",50": 50}
+        values = {
+            "R$ 1.234,56": 123456,
+            "1,234.56": 123456,
+            "1234,56": 123456,
+            "1234.56": 123456,
+            "(8439.11)": -843911,
+            "-12,50": -1250,
+            "(0.00)": 0,
+            "0": 0,
+            "1.234.567": 123456700,
+            ",50": 50,
+        }
         for raw, expected in values.items():
             with self.subTest(raw=raw):
                 self.assertEqual(parse_money(raw), expected)
@@ -31,7 +51,17 @@ class ParserTests(unittest.TestCase):
         self.assertIsNone(parse_money("N/A"))
 
     def test_money_rejects_ambiguous_or_malformed(self):
-        for raw in ("1.234", "1,234", "abc", "1.23,45", "1,234.567", "(-12)", "12-50", "1e3", "NaN reais"):
+        for raw in (
+            "1.234",
+            "1,234",
+            "abc",
+            "1.23,45",
+            "1,234.567",
+            "(-12)",
+            "12-50",
+            "1e3",
+            "NaN reais",
+        ):
             with self.subTest(raw=raw), self.assertRaises(ValueError):
                 parse_money(raw)
 
@@ -41,7 +71,13 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(parse_excel_money("-75752.179999999993"), (-7575218, True))
         self.assertEqual(parse_excel_money("123,45"), (12345, False))
         self.assertEqual(parse_excel_money("N/A"), (None, False))
-        for raw in ("1.234", "1,234", "1.234567", "1.230001", "999999999999999999999999999999.234567"):
+        for raw in (
+            "1.234",
+            "1,234",
+            "1.234567",
+            "1.230001",
+            "999999999999999999999999999999.234567",
+        ):
             with self.subTest(raw=raw), self.assertRaises(ValueError):
                 parse_excel_money(raw)
 
@@ -56,11 +92,17 @@ class ParserTests(unittest.TestCase):
                 parse_integer(raw)
 
     def test_date_formats_and_fixed_two_digit_year(self):
-        values = {"2026-08-01": "2026-08-01", "01.08.2026": "2026-08-01",
-                  "1 de agosto de 2026": "2026-08-01", "02-Mar-2004": "2004-03-02",
-                  "15/08/05": "2005-08-15", "31/12/29": "2029-12-31",
-                  "31/12/30": "1930-12-31", "07-13-2023": "2023-07-13",
-                  "25866": "1970-10-25"}
+        values = {
+            "2026-08-01": "2026-08-01",
+            "01.08.2026": "2026-08-01",
+            "1 de agosto de 2026": "2026-08-01",
+            "02-Mar-2004": "2004-03-02",
+            "15/08/05": "2005-08-15",
+            "31/12/29": "2029-12-31",
+            "31/12/30": "1930-12-31",
+            "07-13-2023": "2023-07-13",
+            "25866": "1970-10-25",
+        }
         for raw, expected in values.items():
             with self.subTest(raw=raw):
                 self.assertEqual(parse_date(raw)[0], expected)
@@ -108,12 +150,23 @@ class ParserTests(unittest.TestCase):
             parse_bool("talvez")
 
     def test_email_syntax_and_normalization(self):
-        self.assertEqual(normalize_email("  USER+teste@EXAMPLE.COM.BR  "), "user+teste@example.com.br")
+        self.assertEqual(
+            normalize_email("  USER+teste@EXAMPLE.COM.BR  "), "user+teste@example.com.br"
+        )
         self.assertEqual(normalize_email("  JOÃO.SILVA@EXEMPLO.COM  "), "joão.silva@exemplo.com")
         self.assertEqual(normalize_email("JOA\u0303O.SILVA@EXEMPLO.COM"), "joão.silva@exemplo.com")
         self.assertEqual(normalize_email("usuário@exémplo.com"), "usuário@xn--exmplo-cva.com")
         self.assertIsNone(normalize_email("NULL"))
-        for raw in ("a.example.com", "a@@example.com", "a b@example.com", ".a@example.com", "a@-x.com", "a@example", "a\u200bb@example.com", "a😀@example.com"):
+        for raw in (
+            "a.example.com",
+            "a@@example.com",
+            "a b@example.com",
+            ".a@example.com",
+            "a@-x.com",
+            "a@example",
+            "a\u200bb@example.com",
+            "a😀@example.com",
+        ):
             with self.subTest(raw=raw), self.assertRaises(ValueError):
                 normalize_email(raw)
 
@@ -122,7 +175,12 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(normalize_phone(" 96373-7350 ", "85"), "+5585963737350")
         self.assertEqual(normalize_phone("+55 (11) 99999-1234", "11"), "+5511999991234")
         self.assertEqual(normalize_phone("1133334444"), "+551133334444")
-        for raw, ddd in (("11999991234", "21"), ("999991234", None), ("999991234", "20"), ("+449999999999", None)):
+        for raw, ddd in (
+            ("11999991234", "21"),
+            ("999991234", None),
+            ("999991234", "20"),
+            ("+449999999999", None),
+        ):
             with self.subTest(raw=raw, ddd=ddd), self.assertRaises(ValueError):
                 normalize_phone(raw, ddd)
 

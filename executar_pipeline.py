@@ -1,4 +1,5 @@
 """Entrada simplificada: selecionar o Excel e receber o resultado da pipeline."""
+
 from __future__ import annotations
 
 import argparse
@@ -18,9 +19,11 @@ PROJECT = Path(__file__).resolve().parent
 
 def select_file() -> Path | None:
     if platform.system() == "Darwin":
-        script = '''set selectedFile to choose file with prompt "Selecione o arquivo Excel para processar. As demais etapas são automáticas." of type {"xlsx"}
-return POSIX path of selectedFile'''
-        result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, check=False)
+        script = """set selectedFile to choose file with prompt "Selecione o arquivo Excel para processar. As demais etapas são automáticas." of type {"xlsx"}
+return POSIX path of selectedFile"""
+        result = subprocess.run(
+            ["osascript", "-e", script], capture_output=True, text=True, check=False
+        )
         if result.returncode:
             if "(-128)" in result.stderr:
                 return None
@@ -32,9 +35,15 @@ return POSIX path of selectedFile'''
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Selecione o Excel; a pipeline resolve todas as outras etapas.")
-    parser.add_argument("arquivo", nargs="?", type=Path, help="Opcional: informar o Excel sem abrir o seletor")
-    parser.add_argument("--sem-abrir", action="store_true", help="Gerar os resultados sem abrir o navegador")
+    parser = argparse.ArgumentParser(
+        description="Selecione o Excel; a pipeline resolve todas as outras etapas."
+    )
+    parser.add_argument(
+        "arquivo", nargs="?", type=Path, help="Opcional: informar o Excel sem abrir o seletor"
+    )
+    parser.add_argument(
+        "--sem-abrir", action="store_true", help="Gerar os resultados sem abrir o navegador"
+    )
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     try:
@@ -48,12 +57,17 @@ def main(argv=None):
         if not selected.is_file():
             raise FileNotFoundError(f"Arquivo não encontrado: {selected}")
         print(f"Arquivo selecionado: {selected.name}", flush=True)
-        print("Processando: leitura → limpeza → validações → banco e bases finais → relatório.", flush=True)
+        print(
+            "Processando: leitura → limpeza → validações → banco e bases finais → relatório.",
+            flush=True,
+        )
         output = run_pipeline(selected, PROJECT / "outputs")
         counts = json.loads((output / "qualidade.json").read_text(encoding="utf-8"))["counts"]
         report = output / "relatorio.html"
         print(f"\nConcluído: {counts['registros_unicos']:,} registros tratados.".replace(",", "."))
-        print(f"Aptos: {counts['APTO']} | Revisão: {counts['REVISAO']} | Quarentena: {counts['QUARENTENA']}")
+        print(
+            f"Aptos: {counts['APTO']} | Revisão: {counts['REVISAO']} | Quarentena: {counts['QUARENTENA']}"
+        )
         print(f"Resultados: {output}")
         print(f"Relatório: {report}")
         if not args.sem_abrir:

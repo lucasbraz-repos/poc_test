@@ -115,13 +115,16 @@ Exemplo de consulta, usando um caminho real de `outputs/<run_id>/carteira.sqlite
 import sqlite3
 
 with sqlite3.connect("file:outputs/SEU_RUN_ID/carteira.sqlite?mode=ro", uri=True) as db:
-    rows = db.execute("""
-        SELECT produto, COUNT(*) AS contratos,
-               SUM(valor_contabil_centavos) AS saldo_centavos
-        FROM vw_precificacao
-        WHERE data_corte = ?
-        GROUP BY produto
-    """, ("2026-08-01",)).fetchall()
+    rows = db.execute(
+        """
+        SELECT produto, quantidade AS contratos,
+               saldo_contabil_centavos AS saldo_centavos,
+               saldos_preenchidos, saldos_ausentes
+        FROM mart_resumo_carteira
+        WHERE data_corte = ? AND status_qualidade = 'APTO'
+    """,
+        ("2026-08-01",),
+    ).fetchall()
     print(rows)
 ```
 
@@ -133,9 +136,33 @@ Outras oito consultas estão em [sql/consultas.sql](sql/consultas.sql); o parâm
 python3 -m unittest discover -s tests -v
 ```
 
-São 32 testes locais de conversão, regras de negócio, integração e entrada simplificada, além de 11 testes de contratos e orquestração AWS em `tests_aws/`. Incluem seleção e cancelamento do arquivo, abertura do relatório, limites do calendário Excel, datas de dois dígitos, negativos, CPF/CNPJ, e-mail Unicode, isolamento PF/PJ, colisões de chave, quarentena, deduplicação, linhagem, falha de layout sem publicação e reexecução idempotente com detecção de alteração dos artefatos.
+A suíte local cobre conversões, qualidade, deduplicação, contratos de tipos, marts, comandos AWS e recuperação de publicações. `make test` executa os testes sem depender de uma conta AWS; os testes Spark exigem PySpark e são sinalizados como ignorados fora desse ambiente.
 
-Cada carga também executa 13 controles de publicação: integridade SQLite e chaves estrangeiras, reconciliação de linhas, unicidade, isolamento PF/PJ, coerência documental, ausência de erros bloqueantes na Gold, elegibilidade e reconciliação dos três valores monetários entre Silver, Gold e quarentena. As oito consultas de consumo foram executadas na base real.
+A integração dos jobs também foi executada na imagem oficial Glue 5: hashes nativos, somas acima de 64 bits, equivalência dos três marts com SQLite, Parquet, conflitos de chave e carteira inteiramente em quarentena. Para repetir:
+
+```bash
+docker run --rm --platform linux/amd64 --network none --memory 4g --cpus 2 \
+  -v "$PWD:/workspace:ro" --workdir /workspace \
+  -e SPARK_LOCAL_IP=127.0.0.1 --entrypoint /bin/bash \
+  public.ecr.aws/glue/aws-glue-libs:5 \
+  -lc 'export PYTHONPATH="/workspace:${PYTHONPATH}"; spark-submit --master local[2] tools/run_spark_tests.py'
+```
+
+Para testar a compatibilidade do SDK no mesmo contêiner, execute `python3 -m unittest discover -s tests_aws -p test_sdk_compat.py -v` no lugar do `spark-submit`.
+
+Para verificar estilo: `python3 -m pip install -r requirements-dev.txt` e `make lint`. A publicação valida linhas, chaves, isolamento PF/PJ e reconciliação dos três valores financeiros. O comando `tools/verificar_aws.py` confere os dados publicados com consultas reais no Athena.
+
+## Indicadores e disponibilização
+
+Os três produtos agregados são `mart_resumo_carteira`, `mart_indicadores_carteira` e `mart_qualidade`. Incluem exposição, completude, sinal dos valores, atraso, disponibilidade de contato e indicadores declarados de garantia e ajuizamento. O relatório HTML permite escolher corte e universo e mostra os denominadores das medidas. Consulte [definições das métricas](docs/metricas.md) e [formas de consumo](docs/consumo.md).
+
+Para exportar os agregados atuais da AWS:
+
+```bash
+python3 tools/exportar_aws.py --profile poc-aws --dataset todos
+```
+
+O comando grava CSV, JSON e dicionário em `outputs_aws/exportacoes/<load_id>/`. As views atuais no Athena selecionam uma única carga publicada. A infraestrutura inclui um workgroup de BI e uma política de leitura agregada, sem atribuição automática a usuários ou conexão automática com ferramentas de BI.
 
 ## Organização do código
 
@@ -146,7 +173,9 @@ Cada carga também executa 13 controles de publicação: integridade SQLite e ch
 | `pipeline/parsers.py` | Conversões e validações de tipos. |
 | `pipeline/cleaning.py` | Regras de coerência, derivação e qualidade. |
 | `pipeline/modeling.py` | Persistência SQLite e modelo dimensional. |
-| `pipeline/reporting.py` | HTML offline e Markdown agregados. |
+| `pipeline/metrics.py` | Definições e SQL compartilhados dos três marts. |
+| `pipeline/dashboard.py` | Relatório interativo comum ao local e à AWS. |
+| `pipeline/reporting.py` | Publicação local de HTML e Markdown agregados. |
 | `pipeline/run.py` | Orquestração, deduplicação, exportações, controles e publicação. |
 
 Investigações exploratórias adicionais estão em `analysis/`. Os números da execução e a trilha reproduzível da carga estão nos artefatos gerados.

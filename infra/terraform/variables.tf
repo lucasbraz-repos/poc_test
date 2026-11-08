@@ -57,3 +57,21 @@ variable "glue_workers" {
     error_message = "Configure de 2 a 10 workers G.1X."
   }
 }
+
+variable "shuffle_partitions" {
+  type    = number
+  default = 4
+  validation {
+    condition     = var.shuffle_partitions >= 1 && var.shuffle_partitions <= 200
+    error_message = "Configure de 1 a 200 partições de shuffle."
+  }
+}
+
+variable "output_partitions" {
+  type    = number
+  default = 2
+  validation {
+    condition     = var.output_partitions >= 1 && var.output_partitions <= 200
+    error_message = "Configure de 1 a 200 partições de saída."
+  }
+}

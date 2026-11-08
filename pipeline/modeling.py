@@ -1,11 +1,12 @@
 """Publicação transacional em SQLite e modelo dimensional da carteira."""
+
 from __future__ import annotations
 
-import json
 import sqlite3
 from datetime import date
 
 from .cleaning import fingerprint, stable_json
+from .metrics import analytics_queries, register_sqlite_aggregates
 from .schema import FACT_FIELDS, INTEGER_FIELDS
 
 
@@ -21,6 +22,7 @@ def dict_rows(connection, query, params=()):
 
 def build_database(path, records, lineage, profile, metadata):
     connection = sqlite3.connect(path)
+    register_sqlite_aggregates(connection)
     connection.execute("PRAGMA foreign_keys=ON")
     fields = list(records[0]["data"]) if records else []
     if not fields:
@@ -46,20 +48,48 @@ def build_database(path, records, lineage, profile, metadata):
             CREATE TABLE perfil_colunas (coluna TEXT PRIMARY KEY, nome TEXT NOT NULL,total INTEGER NOT NULL,
                 ausentes INTEGER NOT NULL,distintos INTEGER NOT NULL);
         """)
-        connection.execute("INSERT INTO carga VALUES (?,?)", (metadata["run_id"], stable_json(metadata)))
+        connection.execute(
+            "INSERT INTO carga VALUES (?,?)", (metadata["run_id"], stable_json(metadata))
+        )
         placeholders = ",".join("?" for _ in range(len(fields) + 4))
-        connection.executemany(f"INSERT INTO registros_tratados VALUES ({placeholders})", [
-            [r["id"], *[r["data"][f] for f in fields], r["status"], len(r["rows"]),
-             sum(i["severidade"] != "INFO" for i in r["issues"])] for r in records])
+        connection.executemany(
+            f"INSERT INTO registros_tratados VALUES ({placeholders})",
+            [
+                [
+                    r["id"],
+                    *[r["data"][f] for f in fields],
+                    r["status"],
+                    len(r["rows"]),
+                    sum(i["severidade"] != "INFO" for i in r["issues"]),
+                ]
+                for r in records
+            ],
+        )
         connection.executemany("INSERT INTO linhagem_origem VALUES (?,?,?,?,?)", lineage)
-        connection.executemany("INSERT INTO ocorrencias_qualidade(registro_id,codigo,campo,severidade,detalhe_json) VALUES (?,?,?,?,?)",
-                               [(r["id"], i["codigo"], i["campo"], i["severidade"], stable_json(i["detalhe"]))
-                                for r in records for i in r["issues"]])
-        connection.executemany("INSERT INTO perfil_colunas VALUES (?,?,?,?,?)", [
-            [col, item["nome"], item["total"], item["ausentes"], item["distintos"]]
-            for col, item in profile["columns"].items()])
+        connection.executemany(
+            "INSERT INTO ocorrencias_qualidade(registro_id,codigo,campo,severidade,detalhe_json) VALUES (?,?,?,?,?)",
+            [
+                (r["id"], i["codigo"], i["campo"], i["severidade"], stable_json(i["detalhe"]))
+                for r in records
+                for i in r["issues"]
+            ],
+        )
+        connection.executemany(
+            "INSERT INTO perfil_colunas VALUES (?,?,?,?,?)",
+            [
+                [col, item["nome"], item["total"], item["ausentes"], item["distintos"]]
+                for col, item in profile["columns"].items()
+            ],
+        )
         create_dimensions(connection, records)
         create_facts(connection, records)
+        for name, query in analytics_queries(
+            engine="sqlite",
+            records="registros_tratados",
+            facts="fato_carteira",
+            issues="ocorrencias_qualidade",
+        ).items():
+            connection.execute(f"CREATE TABLE {name} AS {query}")
     return connection
 
 
@@ -86,14 +116,25 @@ def create_dimensions(db, records):
         names = debtor_names.setdefault(debtor_id, set())
         if d["nome_devedor"]:
             names.add(d["nome_devedor"])
-        debtors[debtor_id] = (debtor_id, d["documento_devedor"], d["tipo_pessoa"],
-                              next(iter(names)) if len(names) == 1 else None, d["documento_devedor_valido"] or 0)
+        debtors[debtor_id] = (
+            debtor_id,
+            d["documento_devedor"],
+            d["tipo_pessoa"],
+            next(iter(names)) if len(names) == 1 else None,
+            d["documento_devedor_valido"] or 0,
+        )
         products[product_id] = (product_id, d["produto"], d["subproduto"])
         dates.update(d[f] for f in d if f.startswith("data_") and d[f])
     db.executemany("INSERT INTO dim_cedente VALUES (?,?,?)", sorted(cedentes.values()))
     db.executemany("INSERT INTO dim_devedor VALUES (?,?,?,?,?)", sorted(debtors.values()))
     db.executemany("INSERT INTO dim_produto VALUES (?,?,?)", sorted(products.values()))
-    db.executemany("INSERT INTO dim_data VALUES (?,?,?,?,?)", [(v, (dt := date.fromisoformat(v)).year, dt.month, dt.day, (dt.month - 1) // 3 + 1) for v in sorted(dates)])
+    db.executemany(
+        "INSERT INTO dim_data VALUES (?,?,?,?,?)",
+        [
+            (v, (dt := date.fromisoformat(v)).year, dt.month, dt.day, (dt.month - 1) // 3 + 1)
+            for v in sorted(dates)
+        ],
+    )
 
 
 def create_facts(db, records):
@@ -106,9 +147,16 @@ def create_facts(db, records):
         status_qualidade TEXT NOT NULL CHECK(status_qualidade IN ('APTO','REVISAO')),
         UNIQUE(cedente_id,numero_contrato,data_corte),
         FOREIGN KEY(data_corte) REFERENCES dim_data(data))""")
-    db.executemany("INSERT INTO fato_carteira VALUES (" + ",".join("?" for _ in range(len(FACT_FIELDS) + 5)) + ")", [
-        [r["id"], *r["dimension_ids"], *[r["data"][f] for f in FACT_FIELDS], r["status"]]
-        for r in records if r["status"] != "QUARENTENA"])
+    db.executemany(
+        "INSERT INTO fato_carteira VALUES ("
+        + ",".join("?" for _ in range(len(FACT_FIELDS) + 5))
+        + ")",
+        [
+            [r["id"], *r["dimension_ids"], *[r["data"][f] for f in FACT_FIELDS], r["status"]]
+            for r in records
+            if r["status"] != "QUARENTENA"
+        ],
+    )
     db.executescript("""
         CREATE INDEX ix_fato_corte ON fato_carteira(data_corte);
         CREATE INDEX ix_fato_status ON fato_carteira(status_qualidade);
@@ -119,10 +167,5 @@ def create_facts(db, records):
         CREATE VIEW vw_carteira_mascarada AS SELECT registro_id,data_corte,tipo_pessoa,produto,subproduto,uf,
             faixa_atraso,dias_atraso_calculado,valor_original_centavos,valor_contabil_centavos,valor_face_centavos,
             status_qualidade FROM fato_carteira;
-        CREATE VIEW mart_resumo_carteira AS SELECT data_corte,tipo_pessoa,produto,faixa_atraso,status_qualidade,
-            COUNT(*) AS quantidade,SUM(valor_contabil_centavos) AS saldo_contabil_centavos,
-            SUM(valor_contabil_centavos IS NULL) AS saldos_ausentes,
-            SUM(valor_contabil_centavos<0) AS saldos_negativos
-            FROM fato_carteira GROUP BY data_corte,tipo_pessoa,produto,faixa_atraso,status_qualidade;
         CREATE VIEW vw_quarentena AS SELECT * FROM registros_tratados WHERE status_qualidade='QUARENTENA';
     """)

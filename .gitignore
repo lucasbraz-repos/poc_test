@@ -33,4 +33,6 @@ outputs_aws/
 *.tfvars
 !*.tfvars.example
 .venv-aws/
+.venv-dev/
+.ruff_cache/
 .aws/

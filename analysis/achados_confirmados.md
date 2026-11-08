@@ -1,4 +1,4 @@
-# Investigação independente da fonte
+# Investigação da fonte e validação das regras
 
 A planilha tem uma aba (`Base_Randon_Over90`), 79 colunas e 10.740 registros. Os números desta nota distinguem registros originais de entidades distintas por código identificador.
 
@@ -31,11 +31,11 @@ Entre os 10.500 identificadores deduplicados:
 
 - 9.497 de 9.500 atrasos informados comparáveis divergem de corte menos vencimento. Preservar o declarado e disponibilizar atraso calculado separadamente.
 - 511 vencimentos são posteriores ao corte; portanto o nome da aba Over90 não deve determinar o filtro sem cálculo e validação.
-- 321 aberturas de PJ ocorrem após contratação e 1.442 ajuizamentos antecedem contratação. Sinalizar para revisão, sem ajustar silenciosamente datas.
+- 283 aberturas de PJ ocorrem após contratação e 1.442 ajuizamentos antecedem contratação. Sinalizar para revisão, sem ajustar silenciosamente datas.
 - Plano de parcelas = pagas + restantes em todos os 8.984 casos completos, e plano = total em todos os 9.481 casos comparáveis.
 - Existem 157 indicações de avalista sem documento e seis indicações de garantia sem tipo nem registro.
 - Negativos reais em parênteses ocorrem em renda (616), original (1.073), contábil (1.131), face (1.137), parcela (1.044), total pago (825) e ação (603). Interpretar o sinal corretamente e sinalizar; `abs` alteraria a informação de origem.
 - Valores monetários misturam convenções brasileira e americana, além de `R$`. Numerais XML trazem por vezes ruído binário de ponto flutuante; a pipeline recupera centavos via Decimal somente para resíduos de até `1E-8` real e seis ou mais casas, registrando cada ajuste.
 - Todos os 10.500 primeiros e-mails têm um @ e nenhum espaço, mas 3.334 usam Unicode; 1.002 dos 3.099 segundos e-mails presentes também usam Unicode. Não remover acentos do endereço automaticamente.
 
-Os arquivos `profile_source.json` e `relationships_source.json` são evidências exploratórias; contêm valores da fonte e não devem ser publicados como relatórios anônimos.
+Os scripts de investigação agora reutilizam os parsers e controles da pipeline, em vez de manter conversões alternativas de datas e valores. Execute `python3 analysis/profile_investigation.py /caminho/base.xlsx` e `python3 analysis/relationships_investigation.py /caminho/base.xlsx`; os artefatos privados ficam em `build/analysis/`. As quantidades de regras refletem a implementação com pivot explícito. Arquivos exploratórios antigos não são evidência de uma execução atual.

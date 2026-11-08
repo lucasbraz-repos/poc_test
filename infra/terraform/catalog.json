@@ -1021,7 +1021,27 @@
         "type": "bigint"
       },
       {
+        "name": "valor_original_centavos",
+        "type": "decimal(38,0)"
+      },
+      {
+        "name": "original_preenchidos",
+        "type": "bigint"
+      },
+      {
+        "name": "original_ausentes",
+        "type": "bigint"
+      },
+      {
+        "name": "original_negativos",
+        "type": "bigint"
+      },
+      {
         "name": "saldo_contabil_centavos",
+        "type": "decimal(38,0)"
+      },
+      {
+        "name": "saldos_preenchidos",
         "type": "bigint"
       },
       {
@@ -1030,6 +1050,192 @@
       },
       {
         "name": "saldos_negativos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_face_centavos",
+        "type": "decimal(38,0)"
+      },
+      {
+        "name": "face_preenchidos",
+        "type": "bigint"
+      },
+      {
+        "name": "face_ausentes",
+        "type": "bigint"
+      },
+      {
+        "name": "face_negativos",
+        "type": "bigint"
+      }
+    ]
+  },
+  "mart_indicadores_carteira": {
+    "layer": "gold",
+    "columns": [
+      {
+        "name": "universo",
+        "type": "string"
+      },
+      {
+        "name": "data_corte",
+        "type": "string"
+      },
+      {
+        "name": "quantidade",
+        "type": "bigint"
+      },
+      {
+        "name": "devedores_distintos",
+        "type": "bigint"
+      },
+      {
+        "name": "cedentes_distintos",
+        "type": "bigint"
+      },
+      {
+        "name": "aptos",
+        "type": "bigint"
+      },
+      {
+        "name": "revisao",
+        "type": "bigint"
+      },
+      {
+        "name": "quarentena",
+        "type": "bigint"
+      },
+      {
+        "name": "pessoas_fisicas",
+        "type": "bigint"
+      },
+      {
+        "name": "pessoas_juridicas",
+        "type": "bigint"
+      },
+      {
+        "name": "com_email",
+        "type": "bigint"
+      },
+      {
+        "name": "com_telefone",
+        "type": "bigint"
+      },
+      {
+        "name": "atraso_calculavel",
+        "type": "bigint"
+      },
+      {
+        "name": "atraso_sem_calculo",
+        "type": "bigint"
+      },
+      {
+        "name": "atraso_acima_90",
+        "type": "bigint"
+      },
+      {
+        "name": "vencimento_apos_corte",
+        "type": "bigint"
+      },
+      {
+        "name": "garantia_sim",
+        "type": "bigint"
+      },
+      {
+        "name": "garantia_nao",
+        "type": "bigint"
+      },
+      {
+        "name": "garantia_sem_informacao",
+        "type": "bigint"
+      },
+      {
+        "name": "ajuizado_sim",
+        "type": "bigint"
+      },
+      {
+        "name": "ajuizado_nao",
+        "type": "bigint"
+      },
+      {
+        "name": "ajuizado_sem_informacao",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_original_centavos",
+        "type": "decimal(38,0)"
+      },
+      {
+        "name": "original_preenchidos",
+        "type": "bigint"
+      },
+      {
+        "name": "original_ausentes",
+        "type": "bigint"
+      },
+      {
+        "name": "original_negativos",
+        "type": "bigint"
+      },
+      {
+        "name": "saldo_contabil_centavos",
+        "type": "decimal(38,0)"
+      },
+      {
+        "name": "saldos_preenchidos",
+        "type": "bigint"
+      },
+      {
+        "name": "saldos_ausentes",
+        "type": "bigint"
+      },
+      {
+        "name": "saldos_negativos",
+        "type": "bigint"
+      },
+      {
+        "name": "valor_face_centavos",
+        "type": "decimal(38,0)"
+      },
+      {
+        "name": "face_preenchidos",
+        "type": "bigint"
+      },
+      {
+        "name": "face_ausentes",
+        "type": "bigint"
+      },
+      {
+        "name": "face_negativos",
+        "type": "bigint"
+      }
+    ]
+  },
+  "mart_qualidade": {
+    "layer": "gold",
+    "columns": [
+      {
+        "name": "codigo",
+        "type": "string"
+      },
+      {
+        "name": "campo",
+        "type": "string"
+      },
+      {
+        "name": "severidade",
+        "type": "string"
+      },
+      {
+        "name": "ocorrencias",
+        "type": "bigint"
+      },
+      {
+        "name": "registros_afetados",
+        "type": "bigint"
+      },
+      {
+        "name": "total_registros",
         "type": "bigint"
       }
     ]

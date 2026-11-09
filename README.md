@@ -164,7 +164,7 @@ python3 tools/exportar_aws.py --profile poc-aws --dataset todos
 
 O comando grava CSV, JSON e dicionário em `outputs_aws/exportacoes/<load_id>/`. As views atuais no Athena selecionam uma única carga publicada. A infraestrutura inclui um workgroup de BI e uma política de leitura agregada, sem atribuição automática a usuários ou conexão automática com ferramentas de BI.
 
-Para uma conferência rápida dos scripts, `tests_aws/test_medallion_syntax.py` compila e importa Bronze, Silver e Gold sem iniciar jobs. Na imagem Glue, execute `spark-submit --master local[2] tools/run_spark_tests.py --suite smoke` para exercitar Silver/Gold e seus SQLs com três registros em memória. Esse smoke não lê Excel nem grava Parquet, não acessa AWS e não valida uma publicação final. Use `--suite jobs` para os testes de integração existentes ou `--suite all` para ambos.
+Para uma conferência rápida dos scripts, `tests_aws/test_medallion_syntax.py` compila e importa Bronze, Silver e Gold sem iniciar jobs. Na imagem Glue, execute `spark-submit --master local[2] tools/run_spark_tests.py --suite smoke` para exercitar os contratos Bronze, as transformações Silver/Gold e seus SQLs com três registros em memória. Esse smoke não lê Excel nem grava Parquet, não acessa AWS e não valida uma publicação final. Use `--layer bronze`, `--layer silver` ou `--layer gold` junto com `--suite smoke` para selecionar a camada. No GitHub Actions, o job **Validar Bronze, Silver e Gold** mostra um step separado para cada camada e é obrigatório para liberar o deploy. Use `--suite jobs` para os testes de integração existentes ou `--suite all` para ambos.
 
 ## CI/CD no GitHub
 

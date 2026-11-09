@@ -63,17 +63,39 @@ jobs:
             public.ecr.aws/glue/aws-glue-libs:5 \
             -lc 'export PYTHONPATH="/workspace:${PYTHONPATH}"; spark-submit --master local[2] tools/run_spark_tests.py --suite jobs && python3 -m unittest discover -s tests_aws -p test_sdk_compat.py -v'
 
-      - name: Smoke de sintaxe Spark com três linhas em memória
+  medallion:
+    name: Validar Bronze, Silver e Gold
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validar Bronze — sintaxe, imports e tabela em memória
         run: |
           docker run --rm --network none --memory 4g --cpus 2 \
             -v "$PWD:/workspace:ro" --workdir /workspace \
             -e SPARK_LOCAL_IP=127.0.0.1 --entrypoint /bin/bash \
             public.ecr.aws/glue/aws-glue-libs:5 \
-            -lc 'export PYTHONPATH="/workspace:${PYTHONPATH}"; spark-submit --master local[2] tools/run_spark_tests.py --suite smoke'
+            -lc 'export PYTHONPATH="/workspace:${PYTHONPATH}"; python3 -m unittest tests_aws.test_medallion_syntax.MedallionSyntaxTests.test_bronze -v && spark-submit --master local[2] tools/run_spark_tests.py --suite smoke --layer bronze'
+      - name: Validar Silver — sintaxe, imports e tabela em memória
+        run: |
+          docker run --rm --network none --memory 4g --cpus 2 \
+            -v "$PWD:/workspace:ro" --workdir /workspace \
+            -e SPARK_LOCAL_IP=127.0.0.1 --entrypoint /bin/bash \
+            public.ecr.aws/glue/aws-glue-libs:5 \
+            -lc 'export PYTHONPATH="/workspace:${PYTHONPATH}"; python3 -m unittest tests_aws.test_medallion_syntax.MedallionSyntaxTests.test_silver -v && spark-submit --master local[2] tools/run_spark_tests.py --suite smoke --layer silver'
+      - name: Validar Gold — sintaxe, imports e tabela em memória
+        run: |
+          docker run --rm --network none --memory 4g --cpus 2 \
+            -v "$PWD:/workspace:ro" --workdir /workspace \
+            -e SPARK_LOCAL_IP=127.0.0.1 --entrypoint /bin/bash \
+            public.ecr.aws/glue/aws-glue-libs:5 \
+            -lc 'export PYTHONPATH="/workspace:${PYTHONPATH}"; python3 -m unittest tests_aws.test_medallion_syntax.MedallionSyntaxTests.test_gold -v && spark-submit --master local[2] tools/run_spark_tests.py --suite smoke --layer gold'
 
   deploy:
     name: Publicar na AWS
-    needs: [validate, spark]
+    needs: [validate, spark, medallion]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 70

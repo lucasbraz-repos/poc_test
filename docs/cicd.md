@@ -1,13 +1,14 @@
 # Integração e entrega contínuas
 
-O workflow [cicd.yml](../.github/workflows/cicd.yml) roda em todo push, pull request e execução manual. Não há filtro por pasta: inclusive mudanças em documentação disparam as verificações. Commits da `main` são implantados automaticamente depois que os dois jobs de validação passam; outras branches e PRs executam somente CI.
+O workflow [cicd.yml](../.github/workflows/cicd.yml) roda em todo push, pull request e execução manual. Não há filtro por pasta: inclusive mudanças em documentação disparam as verificações. Commits da `main` são implantados automaticamente depois que os três jobs de validação passam; outras branches e PRs executam somente CI.
 
 ## Fluxo
 
 1. **Validação:** Python 3.11, lint, formatação, testes locais/AWS simulados, pacote reproduzível, comparação do catálogo gerado com o versionado e validação dos dois projetos Terraform.
-2. **Integração:** testes PySpark e compatibilidade do SDK na imagem oficial Glue 5, sem rede dentro do contêiner e sem dados reais. Uma etapa separada executa um smoke com somente três linhas em memória, sem Excel ou Parquet, para detectar erros de expressões, colunas, tipos e SQL em Silver/Gold. A compilação e a importação dos três scripts sem iniciar Glue são verificadas no job Python.
-3. **Deploy da main:** autenticação OIDC, conferência da conta, espera por uma janela sem cargas/fila pendentes, plano/aplicação Terraform e atualização das views Athena.
-4. **Conferência e rastreabilidade:** versão dos três jobs, Workflow e Lambda e presença das tabelas; arquivo do commit completo em `s3://<artifacts_bucket>/commits/<sha>/source.tar.gz`; resultado do deploy nos artefatos do GitHub Actions.
+2. **Integração:** testes PySpark existentes e compatibilidade do SDK na imagem oficial Glue 5.
+3. **Validar Bronze, Silver e Gold:** job independente com três steps, um por camada. Cada step compila/importa seu script e executa um smoke com até três linhas em memória, sem Excel, Parquet ou AWS. Bronze confere o contrato de sua tabela em memória; Silver executa a transformação; Gold executa o modelo e as expressões SQL dos marts. O teste Bronze não executa a ingestão de Excel/S3. O job roda em paralelo às outras validações e bloqueia o deploy se falhar.
+4. **Deploy da main:** autenticação OIDC, conferência da conta, espera por uma janela sem cargas/fila pendentes, plano/aplicação Terraform e atualização das views Athena.
+5. **Conferência e rastreabilidade:** versão dos três jobs, Workflow e Lambda e presença das tabelas; arquivo do commit completo em `s3://<artifacts_bucket>/commits/<sha>/source.tar.gz`; resultado do deploy nos artefatos do GitHub Actions.
 
 O processamento de dados continua sendo disparado pelo upload de um Excel no S3. Um commit publica o código e a infraestrutura, sem reenviar automaticamente a base ou gerar uma nova fotografia econômica.
 

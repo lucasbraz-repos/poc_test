@@ -5,7 +5,7 @@ O workflow [cicd.yml](../.github/workflows/cicd.yml) roda em todo push, pull req
 ## Fluxo
 
 1. **Validação:** Python 3.11, lint, formatação, testes locais/AWS simulados, pacote reproduzível, comparação do catálogo gerado com o versionado e validação dos dois projetos Terraform.
-2. **Integração:** testes PySpark e compatibilidade do SDK na imagem oficial Glue 5, sem rede dentro do contêiner e sem dados reais.
+2. **Integração:** testes PySpark e compatibilidade do SDK na imagem oficial Glue 5, sem rede dentro do contêiner e sem dados reais. Uma etapa separada executa um smoke com somente três linhas em memória, sem Excel ou Parquet, para detectar erros de expressões, colunas, tipos e SQL em Silver/Gold. A compilação e a importação dos três scripts sem iniciar Glue são verificadas no job Python.
 3. **Deploy da main:** autenticação OIDC, conferência da conta, espera por uma janela sem cargas/fila pendentes, plano/aplicação Terraform e atualização das views Athena.
 4. **Conferência e rastreabilidade:** versão dos três jobs, Workflow e Lambda e presença das tabelas; arquivo do commit completo em `s3://<artifacts_bucket>/commits/<sha>/source.tar.gz`; resultado do deploy nos artefatos do GitHub Actions.
 

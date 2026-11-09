@@ -61,7 +61,15 @@ jobs:
             -v "$PWD:/workspace:ro" --workdir /workspace \
             -e SPARK_LOCAL_IP=127.0.0.1 --entrypoint /bin/bash \
             public.ecr.aws/glue/aws-glue-libs:5 \
-            -lc 'export PYTHONPATH="/workspace:${PYTHONPATH}"; spark-submit --master local[2] tools/run_spark_tests.py && python3 -m unittest discover -s tests_aws -p test_sdk_compat.py -v'
+            -lc 'export PYTHONPATH="/workspace:${PYTHONPATH}"; spark-submit --master local[2] tools/run_spark_tests.py --suite jobs && python3 -m unittest discover -s tests_aws -p test_sdk_compat.py -v'
+
+      - name: Smoke de sintaxe Spark com três linhas em memória
+        run: |
+          docker run --rm --network none --memory 4g --cpus 2 \
+            -v "$PWD:/workspace:ro" --workdir /workspace \
+            -e SPARK_LOCAL_IP=127.0.0.1 --entrypoint /bin/bash \
+            public.ecr.aws/glue/aws-glue-libs:5 \
+            -lc 'export PYTHONPATH="/workspace:${PYTHONPATH}"; spark-submit --master local[2] tools/run_spark_tests.py --suite smoke'
 
   deploy:
     name: Publicar na AWS

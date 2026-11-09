@@ -164,6 +164,8 @@ python3 tools/exportar_aws.py --profile poc-aws --dataset todos
 
 O comando grava CSV, JSON e dicionário em `outputs_aws/exportacoes/<load_id>/`. As views atuais no Athena selecionam uma única carga publicada. A infraestrutura inclui um workgroup de BI e uma política de leitura agregada, sem atribuição automática a usuários ou conexão automática com ferramentas de BI.
 
+Para uma conferência rápida dos scripts, `tests_aws/test_medallion_syntax.py` compila e importa Bronze, Silver e Gold sem iniciar jobs. Na imagem Glue, execute `spark-submit --master local[2] tools/run_spark_tests.py --suite smoke` para exercitar Silver/Gold e seus SQLs com três registros em memória. Esse smoke não lê Excel nem grava Parquet, não acessa AWS e não valida uma publicação final. Use `--suite jobs` para os testes de integração existentes ou `--suite all` para ambos.
+
 ## CI/CD no GitHub
 
 O [GitHub Actions](.github/workflows/cicd.yml) valida todos os pushes e PRs. Após os testes Python/PySpark e a validação Terraform, a `main` implanta automaticamente na AWS por OIDC, atualiza jobs e views e arquiva o commit completo no S3. Não há filtro por pasta. Estado e lock do Terraform ficam em um bucket S3 privado; chaves permanentes não são armazenadas no GitHub.

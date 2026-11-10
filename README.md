@@ -1,46 +1,54 @@
 # Pipeline de dados — carteira para análise e precificação
 
-Pipeline executável construída a partir de `Enunciado_Teste_Tecnico.docx` e `BaseTeste.xlsx`. Oferece dois ambientes com as mesmas regras de qualidade: **AWS com S3, Glue/Spark, Glue Data Catalog, Athena e Glue Workflow**, e execução local com Python/SQLite. A execução local usa somente Python 3.11+ e a biblioteca padrão.
+Pipeline executável construída a partir de `Enunciado_Teste_Tecnico.docx` e `BaseTeste.xlsx`. O fluxo principal recebe o Excel diretamente no **S3** e processa os dados com **Glue/Spark, Glue Data Catalog, Athena e Glue Workflow**. A execução local com Python/SQLite permanece disponível para desenvolvimento e conferência, com as mesmas regras de qualidade e somente Python 3.11+ e a biblioteca padrão.
 
 O enunciado foi usado como requisito do exercício: explorar, tratar, justificar decisões e entregar a base final. A implementação e as propostas de consumo atendem ao pedido de montar uma pipeline.
 
-Os resultados são gerados localmente em `outputs/<run_id>/` após selecionar a planilha. O repositório contém código, testes e documentação; o Excel original, as bases individuais, o banco e o pacote ZIP não são versionados.
+Na AWS, os dados e relatórios ficam no S3 e as tabelas são consultadas no Athena. Na alternativa local, os resultados ficam em `outputs/<run_id>/`. O repositório contém código, testes e documentação; o Excel original, as bases individuais, o banco e o pacote ZIP não são versionados.
 
 ## Executar
 
-### AWS: selecionar o Excel e processar na nuvem
+### AWS: enviar o Excel diretamente pelo console do S3
 
-Consulte [docs/aws.md](docs/aws.md) para implantar a infraestrutura com Terraform. Depois da implantação, dê dois cliques em **`Iniciar Pipeline AWS.command`** e escolha o Excel. O arquivo será enviado ao S3; a fila aciona o Glue Workflow, que processa Bronze, Silver e Gold, valida os dados e publica as tabelas para consulta no Athena. O relatório agregado abre ao concluir.
+Com a infraestrutura implantada, o processamento independe do sistema operacional do computador. Não é necessário instalar Python, AWS CLI ou Terraform para enviar uma carga pelo console.
 
-```bash
-# Implantação única; exige um perfil AWS autenticado na conta indicada.
-python3 tools/deploy_aws.py --profile poc-aws --account-id SEU_ID_DE_12_DIGITOS
+1. Entre na conta AWS autorizada e abra o serviço S3 em `us-east-1`.
+2. Abra o bucket de dados da instalação atual: **`poc-carteira-dev-909492399516-487d65-data`**. O nome também está no output Terraform `data_bucket` e na configuração da implantação.
+3. Abra ou crie o prefixo **`landing/`** e faça upload da planilha, por exemplo `landing/BaseTeste.xlsx`. A extensão deve ser **`.xlsx` minúscula**, com o layout esperado de 79 colunas.
+4. Acompanhe a execução em **AWS Glue → Workflows → `poc-carteira-dev`**. A fila SQS e a Lambda iniciam Bronze, Silver e Gold automaticamente; não é necessário iniciar os jobs manualmente.
+5. Após a publicação, consulte as views no Athena, usando o workgroup `poc-carteira-dev` e o database `poc_carteira_dev_gold`. Para visualizar o relatório, baixe **`reports/<load_id>/relatorio.html`** do bucket de dados e abra no navegador. O `load_id` aparece nas propriedades da execução do workflow.
 
-# Nas próximas cargas, só é necessário informar o arquivo.
-python3 tools/enviar_aws.py "/caminho/BaseTeste.xlsx" --profile poc-aws
+```text
+Upload S3 landing/ → SQS → Lambda → Glue Bronze → Silver → Gold
+                                                       ↓
+                                     S3/Parquet + Catálogo → Athena
 ```
 
-Os dados na AWS ficam em Parquet no S3. SQLite e CSV pertencem à opção local. A conta de destino é conferida antes de qualquer implantação ou upload. As credenciais e os dados não são enviados ao GitHub.
+O upload pelo console não baixa nem abre o relatório automaticamente. Os dados tratados permanecem em Parquet no S3; SQLite e as exportações individuais em CSV pertencem à opção local. Cada arquivo representa uma fotografia completa da fonte. Para falhas, consulte os logs no CloudWatch e a fila DLQ, conforme [docs/aws.md](docs/aws.md).
+
+Os scripts Python de envio, acompanhamento e exportação são alternativas ao console. A implantação e esses comandos verificam a conta de destino. Consulte [docs/aws.md](docs/aws.md) para operação e [docs/cicd.md](docs/cicd.md) para deploy e configuração da conta existente. As credenciais e os dados não são enviados ao GitHub.
 
 A implantação e a execução real dos três jobs foram verificadas, incluindo consultas e reconciliação de saldos no Athena. Consulte [as evidências de validação](docs/validacao-aws.md).
 
 O código de cada etapa está diretamente em `cloud/jobs/bronze.py`, `cloud/jobs/silver.py` e `cloud/jobs/gold.py`, incluindo as transformações PySpark de Silver e Gold. A organização está detalhada em [docs/aws.md](docs/aws.md).
 
-### Selecionar o arquivo e deixar tudo automático
+### Alternativa local: desenvolvimento e conferência
 
-No Finder, abra a pasta do projeto e dê **dois cliques em `Iniciar Pipeline.command`**. Escolha o arquivo `.xlsx` na janela que aparecer. A pipeline executa todas as etapas e abre o relatório no navegador ao terminar. Não é preciso informar pastas de saída nem iniciar etapas separadamente.
+Com Python 3.11+ instalado, execute no PowerShell, na raiz do projeto:
 
-Os dados tratados, banco, relatórios, auditoria e quarentena ficam em `outputs/<run_id>/`. Se você selecionar novamente o mesmo arquivo, a pipeline verifica e reutiliza os resultados existentes. A seleção pode ser cancelada sem iniciar uma carga. Essa entrada foi preparada para macOS; o Python continua sendo o único requisito de instalação.
-
-### Execução pelo terminal, se preferir
-
-Na raiz deste projeto:
-
-```bash
-python3 -m pipeline.run --input "/caminho/BaseTeste.xlsx" --output outputs
+```powershell
+python executar_pipeline.py "C:\caminho\BaseTeste.xlsx"
 ```
 
-Em outra máquina, substitua o caminho de entrada pelo local do XLSX. Para arquivos com várias abas, informe `--sheet "Nome da aba"`. O layout precisa corresponder às 79 colunas desta fonte; alterações interrompem a carga antes da publicação.
+O comando executa todas as etapas locais e abre o relatório no navegador ao terminar. Sem o argumento do arquivo, solicita o caminho pelo terminal no Windows; no macOS, usa um seletor de arquivos. Os dados tratados, banco, relatórios, auditoria e quarentena ficam em `outputs/<run_id>/`. Essa execução é independente da AWS e não envia arquivos ao S3.
+
+Para controlar pasta de saída e aba pelo terminal:
+
+```powershell
+python -m pipeline.run --input "C:\caminho\BaseTeste.xlsx" --output outputs
+```
+
+No macOS/Linux, use `python3` e o caminho correspondente. Para arquivos com várias abas, informe `--sheet "Nome da aba"`. O layout precisa corresponder às 79 colunas desta fonte; alterações interrompem a carga antes da publicação.
 
 Disponibilize sua cópia de `BaseTeste.xlsx` no computador e informe seu caminho ou use o seletor de arquivos. A pipeline preserva uma cópia na camada Bronze; o arquivo de entrada não acompanha o repositório.
 
@@ -168,11 +176,13 @@ Para uma conferência rápida dos scripts, `tests_aws/test_medallion_syntax.py` 
 
 ## CI/CD no GitHub
 
-O [GitHub Actions](.github/workflows/cicd.yml) valida todos os pushes e PRs. Após os testes Python/PySpark e a validação Terraform, a `main` implanta automaticamente na AWS por OIDC, atualiza jobs e views e arquiva o commit completo no S3. Não há filtro por pasta. Estado e lock do Terraform ficam em um bucket S3 privado; chaves permanentes não são armazenadas no GitHub.
+O [GitHub Actions](.github/workflows/cicd.yml) valida todos os pushes e PRs, inclusive alterações de documentação. Após os testes Python/PySpark e a validação Terraform, pushes na `main` com alterações fora de `docs/` e de arquivos `*.md` implantam automaticamente na AWS por OIDC, atualizam jobs e views e arquivam o commit completo no S3. Mudanças exclusivamente de documentação não fazem deploy. Uma execução manual na `main` permite repetir o deploy após as validações. Estado e lock do Terraform ficam em um bucket S3 privado; chaves permanentes não são armazenadas no GitHub.
 
 Fluxo, configuração administrativa, atualização da configuração local e rollback estão em [docs/cicd.md](docs/cicd.md). Alterações de código não reenviam automaticamente os arquivos de dados.
 
 ## Organização do código
+
+`pipeline/` reúne código local e regras compartilhadas com os jobs AWS; não deve ser removida ao usar somente a cloud. `cloud/jobs/` contém os pontos de entrada executados pelo Glue. Os scripts em `tools/` são executados no computador ou no GitHub Actions para operar a AWS, preparar pacotes e realizar verificações.
 
 | Módulo | Responsabilidade |
 |---|---|

@@ -3,6 +3,7 @@
 import argparse
 import os
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -28,6 +29,23 @@ class CredentialTests(unittest.TestCase):
 
 
 class AthenaTests(unittest.TestCase):
+    def test_cli_preserves_unicode_independently_of_windows_locale(self):
+        real_run = subprocess.run
+        expected = {"produto": "Crédito — revisão 📊"}
+        script = (
+            "import json,os,sys; "
+            f"value={expected!r}; "
+            "sys.stdout.buffer.write(json.dumps(value,ensure_ascii=False).encode("
+            "os.environ.get('AWS_CLI_OUTPUT_ENCODING','cp1252')))"
+        )
+
+        def fake_cli(command, **kwargs):
+            return real_run([sys.executable, "-c", script], **kwargs)
+
+        with patch.object(aws_cli.subprocess, "run", side_effect=fake_cli):
+            actual = aws_cli.aws("own", "us-east-1", "athena", "get-query-results")
+        self.assertEqual(actual, expected)
+
     def test_result_pagination_drops_only_first_header(self):
         page1 = {
             "ResultSet": {

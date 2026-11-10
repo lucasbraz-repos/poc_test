@@ -50,9 +50,11 @@ Cada etapa contém sua implementação diretamente no arquivo executado pelo Glu
 
 As funções são chamadas dentro do próprio job. `runtime.py` compartilha a sessão Spark e o acesso a S3/Glue; `contracts.py` compartilha os schemas; `pipeline/cleaning.py` e os parsers compartilham as regras de normalização com a execução local.
 
-## Implantar em uma conta nova
+## Implantação e conta configurada
 
-Requisitos locais: AWS CLI v2, Terraform 1.10+ e Python 3.11+. O perfil precisa poder criar os recursos declarados em `infra/terraform/`; para equipes, aplique uma política de implantação revisada pela administração da conta.
+O repositório está configurado para a conta **`909492399516`**, região **`us-east-1`** e repositório GitHub **`lucasbraz-repos/poc_test`**. O backend em `infra/terraform/backend.hcl`, a role no workflow CI/CD e as configurações do bootstrap apontam para essa instalação. Alterar somente `--account-id` não prepara uma implantação em outra conta. Para outro ambiente, revise backend, identidade OIDC, conta, região, nomes e estado Terraform antes de executar o deploy. O script `tools/bootstrap_cicd.py` foi preparado para a instalação existente e a migração de seu estado; não é um instalador genérico para uma conta vazia.
+
+O deploy habitual ocorre pelo GitHub Actions, conforme [cicd.md](cicd.md). Para atualizar a instalação existente pelo computador, os requisitos são AWS CLI v2, Terraform 1.10+ e Python 3.11+. Essas ferramentas não são necessárias para enviar uma planilha pelo console do S3. O perfil de implantação precisa poder acessar o backend e criar os recursos declarados em `infra/terraform/`.
 
 1. Autentique o perfil na conta de destino. Com uma versão recente do AWS CLI, `aws login` permite autenticação pelo navegador sem compartilhar chaves na conversa. [Documentação de login](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html).
 2. Execute o deploy com o ID explícito da conta. O script verifica STS antes de qualquer criação e o provider Terraform aceita somente essa conta.
@@ -63,36 +65,45 @@ aws login --profile poc-aws --region us-east-1
 aws sts get-caller-identity --profile poc-aws
 
 # Somente plano, sem criar recursos:
-python3 tools/deploy_aws.py --profile poc-aws --account-id 123456789012 --plan-only
+python tools/deploy_aws.py --profile poc-aws --account-id 909492399516 --plan-only
 
 # Criar a infraestrutura e as views:
-python3 tools/deploy_aws.py --profile poc-aws --account-id 123456789012
+python tools/deploy_aws.py --profile poc-aws --account-id 909492399516
 ```
 
-Substitua `123456789012` pelo ID autorizado. A região padrão é `us-east-1`; use `--region` para mudar antes da primeira implantação. Não altere região/conta de uma instalação existente sem revisar o estado do Terraform.
+Os comandos acima são para a conta configurada e autorizada. No macOS/Linux, use `python3` se necessário. A região padrão é `us-east-1`; não altere região/conta de uma instalação existente sem revisar o backend e o estado do Terraform.
 
-O login recente do AWS CLI é utilizado pelo deploy por credenciais temporárias passadas **somente na memória** aos subprocessos Terraform. O código não grava nem imprime access keys. O estado do Terraform é local nesta entrega e está excluído do Git; para trabalho em equipe, migre o backend para armazenamento remoto com controle de acesso e locking.
+O login recente do AWS CLI é utilizado pelo deploy por credenciais temporárias passadas **somente na memória** aos subprocessos Terraform. O código não grava nem imprime access keys. O estado da pipeline fica no backend S3 definido em `infra/terraform/backend.hcl`, com criptografia, versionamento e lock nativo S3. Apenas o projeto administrativo `infra/bootstrap/` mantém estado local, excluído do Git, que deve ser preservado em armazenamento administrativo protegido. Detalhes em [cicd.md](cicd.md).
 
 O trigger de entrada é `ON_DEMAND` com `enabled=false` no Terraform: a execução começa por `StartWorkflowRun`, com as propriedades da fonte, e não na criação dos recursos. O dispatcher tem leitura de recibos e `ListBucket` apenas no bucket do projeto; essa permissão permite distinguir recibo ausente (404) de acesso negado (403) ao consultar metadados S3.
 
 Terraform cria recursos que podem gerar cobrança conforme uso. Glue executa computação por job; S3, Athena, filas e logs também têm suas próprias métricas de cobrança. Esta entrega configura limites de execução e consulta, sem presumir custo zero. Para retenção, os resultados do Athena expiram após 30 dias e logs Lambda após 14 dias; originais e camadas do lake não têm expiração automática.
 
-## Usar: somente informar o arquivo
+## Usar: upload direto pelo console do S3
 
-No macOS, dê dois cliques em `Iniciar Pipeline AWS.command`. O seletor solicita o Excel e o comando acompanha o workflow até baixar e abrir o relatório agregado. Alternativa pelo terminal:
+1. No console do S3 da conta configurada, abra o bucket **`poc-carteira-dev-909492399516-487d65-data`**, correspondente ao output `data_bucket` da implantação.
+2. Envie a planilha para **`landing/`**, por exemplo `landing/BaseTeste.xlsx`, usando extensão minúscula **`.xlsx`**. O upload dispara a pipeline; não é necessário instalar ferramentas no computador ou iniciar o Glue manualmente.
+3. No console do Glue, abra o workflow **`poc-carteira-dev`** e acompanhe os jobs Bronze, Silver e Gold. Se a execução não aparecer, confira a fila SQS e os logs da Lambda; falhas dos jobs são investigadas pelos logs no CloudWatch.
+4. Após a publicação, consulte as views no Athena ou baixe **`reports/<load_id>/relatorio.html`** pelo console do S3. O `load_id` consta das propriedades da execução do workflow. Os arquivos Parquet ficam em `runs/<workflow_run_id>/`.
 
-```bash
-python3 tools/enviar_aws.py "/caminho/BaseTeste.xlsx" --profile poc-aws
+Os dados e o relatório permanecem no S3. O console não baixa nem abre o HTML automaticamente. O arquivo de entrada deve seguir o contrato de 79 colunas; um upload concluído não significa que a carga foi validada e publicada.
+
+### Alternativa: envio pelo terminal
+
+Com Python, AWS CLI, perfil autenticado e `build/aws/deployment.json` atualizado, o script envia o arquivo, acompanha o workflow e baixa o relatório agregado para `outputs_aws/`. Para recuperar a configuração da instalação existente, veja [cicd.md](cicd.md). No PowerShell:
+
+```powershell
+python tools/enviar_aws.py "C:\caminho\BaseTeste.xlsx" --profile poc-aws
 ```
 
-Também é possível fazer upload pelo console do S3 no bucket de dados, sob **`landing/`**, usando extensão minúscula **`.xlsx`**. A notificação inicia a mesma pipeline. Os resultados e o relatório permanecem no S3; as tabelas ficam consultáveis no Athena após a validação.
+No macOS/Linux, use `python3` e o caminho correspondente. O comando abre o relatório no navegador ao concluir; use `--sem-abrir` para apenas baixá-lo. Terraform é necessário para implantar recursos, não para enviar uma carga.
 
 A conversão de XLSX é a única etapa não distribuída: o formato ZIP/XML precisa ser aberto por um leitor antes de produzir linhas. A carga suporta até **64 MiB e 250 mil linhas** por arquivo, limites configuráveis no Terraform. A transformação, os agrupamentos, as validações e a escrita em Parquet são executados pelo Spark. Para volumes maiores, prefira receber arquivos já tabulares/particionáveis em outra evolução do contrato.
 
 ## Organização no S3 e publicação
 
 ```text
-landing/<sha-do-arquivo>.xlsx                # entrada versionada
+landing/<nome-do-arquivo>.xlsx               # entrada versionada; o script usa SHA-256 no nome
 bronze/originals/<sha-do-arquivo>.xlsx        # evidência preservada
 runs/<workflow_run_id>/bronze/<tabela>/      # Parquet
 runs/<workflow_run_id>/silver/<tabela>/      # Parquet

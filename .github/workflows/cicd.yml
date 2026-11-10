@@ -18,6 +18,43 @@ env:
   AWS_ACCOUNT_ID: "909492399516"
 
 jobs:
+  changes:
+    name: Identificar alterações para deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      deploy: ${{ steps.filter.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Separar documentação de alterações operacionais
+        id: filter
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          deploy=false
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            deploy=true
+          elif [[ "$EVENT_NAME" == "push" ]]; then
+            if [[ -z "$BEFORE_SHA" || "$BEFORE_SHA" =~ ^0+$ ]]; then
+              deploy=true
+            else
+              git diff --name-only --no-renames -z "$BEFORE_SHA" "$GITHUB_SHA" > "$RUNNER_TEMP/changed-paths"
+              while IFS= read -r -d '' path; do
+                case "$path" in
+                  docs/*|*.md) ;;
+                  *) deploy=true ;;
+                esac
+              done < "$RUNNER_TEMP/changed-paths"
+            fi
+          fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
   validate:
     name: Python, contratos e Terraform
     runs-on: ubuntu-24.04
@@ -95,8 +132,8 @@ jobs:
 
   deploy:
     name: Publicar na AWS
-    needs: [validate, spark, medallion]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [changes, validate, spark, medallion]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 70
     permissions:

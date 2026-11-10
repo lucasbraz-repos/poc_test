@@ -1,16 +1,18 @@
 # Integração e entrega contínuas
 
-O workflow [cicd.yml](../.github/workflows/cicd.yml) roda em todo push, pull request e execução manual. Não há filtro por pasta: inclusive mudanças em documentação disparam as verificações. Commits da `main` são implantados automaticamente depois que os três jobs de validação passam; outras branches e PRs executam somente CI.
+O workflow [cicd.yml](../.github/workflows/cicd.yml) roda em todo push, pull request e execução manual. Inclusive mudanças em documentação disparam as verificações. Um job adicional compara os caminhos alterados entre o commit anterior ao push e o novo commit: alterações exclusivamente em `docs/` ou arquivos `*.md` não fazem deploy. Qualquer outro caminho alterado, inclusive removido, habilita o deploy da `main` depois que os três jobs de validação passam. Renomeações são consideradas como remoção e adição, para detectar código movido para a documentação. Outras branches e PRs executam somente CI.
+
+A execução manual (`workflow_dispatch`) na `main` habilita o deploy mesmo sem mudanças operacionais, após todas as validações. No primeiro push de uma branch, quando não existe commit anterior para comparar, o deploy também é habilitado caso a branch seja `main`. Uma falha na comparação bloqueia o deploy. O filtro não usa `paths-ignore` no workflow, preservando a execução dos checks em PRs de documentação.
 
 ## Fluxo
 
 1. **Validação:** Python 3.11, lint, formatação, testes locais/AWS simulados, pacote reproduzível, comparação do catálogo gerado com o versionado e validação dos dois projetos Terraform.
 2. **Integração:** testes PySpark existentes e compatibilidade do SDK na imagem oficial Glue 5.
 3. **Validar Bronze, Silver e Gold:** job independente com três steps, um por camada. Cada step compila/importa seu script e executa um smoke com até três linhas em memória, sem Excel, Parquet ou AWS. Bronze confere o contrato de sua tabela em memória; Silver executa a transformação; Gold executa o modelo e as expressões SQL dos marts. O teste Bronze não executa a ingestão de Excel/S3. O job roda em paralelo às outras validações e bloqueia o deploy se falhar.
-4. **Deploy da main:** autenticação OIDC, conferência da conta, espera por uma janela sem cargas/fila pendentes, plano/aplicação Terraform e atualização das views Athena.
+4. **Deploy da main, quando habilitado pelo filtro ou pela execução manual:** autenticação OIDC, conferência da conta, espera por uma janela sem cargas/fila pendentes, plano/aplicação Terraform e atualização das views Athena.
 5. **Conferência e rastreabilidade:** versão dos três jobs, Workflow e Lambda e presença das tabelas; arquivo do commit completo em `s3://<artifacts_bucket>/commits/<sha>/source.tar.gz`; resultado do deploy nos artefatos do GitHub Actions.
 
-O processamento de dados continua sendo disparado pelo upload de um Excel no S3. Um commit publica o código e a infraestrutura, sem reenviar automaticamente a base ou gerar uma nova fotografia econômica.
+O processamento de dados continua sendo disparado pelo upload de um Excel no S3 em `landing/`. Um deploy publica o código e a infraestrutura, sem reenviar automaticamente a base ou gerar uma nova fotografia econômica. Para o upload pelo console, não é necessário configurar o ambiente Python ou recuperar `deployment.json` no computador.
 
 ## Identidade e estado
 
@@ -37,11 +39,12 @@ O cancelamento de execuções em andamento está desativado. O GitHub pode subst
 
 O resultado contém o commit, o hash da biblioteca, o checksum do arquivo de código e as conferências realizadas. Estado Terraform, planos, credenciais e dados de devedores não são enviados como artefatos do GitHub. O plano permanece no runner, cuja duração é temporária.
 
-Depois de um deploy que muda a release, atualize a configuração local para enviar arquivos com a versão nova:
+Somente se usar os scripts locais de envio, acompanhamento ou exportação: depois de um deploy que muda a release, crie a pasta de configuração e recupere a versão atual. No PowerShell:
 
-```bash
+```powershell
+New-Item -ItemType Directory -Force build/aws | Out-Null
 aws s3 cp s3://poc-carteira-dev-909492399516-487d65-artifacts/deployments/current.json build/aws/deployment.json --profile poc-aws
-python3 tools/enviar_aws.py /caminho/BaseTeste.xlsx --profile poc-aws
+python tools/enviar_aws.py "C:\caminho\BaseTeste.xlsx" --profile poc-aws
 ```
 
 O código completo do commit fica privado no S3; dados de entrada continuam fora do Git. Para rollback, reverta o commit pela revisão habitual e envie o revert à `main`. Isso publica a configuração anterior pelo mesmo CI/CD; não desfaz cargas já publicadas nem restaura dados apagados por uma alteração destrutiva.

@@ -22,6 +22,8 @@ def aws(profile, region, *args):
         check=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        env={**os.environ, "AWS_CLI_OUTPUT_ENCODING": "UTF-8"},
         timeout=90,
     )
     return json.loads(result.stdout) if result.stdout.strip() else {}

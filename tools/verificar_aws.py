@@ -50,7 +50,7 @@ def main():
         f"control/commits/{load}.json",
         str(output / "manifest.json"),
     )
-    manifest = json.loads((output / "manifest.json").read_text())
+    manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
     if manifest["release_id"] != config["release_id"]:
         raise ValueError(
             "A carga não pertence à release implantada; execute a nova pipeline antes de verificar."
@@ -121,7 +121,7 @@ def main():
         "analytics_universes": universes,
         "analytics_reconciliation": "OK",
     }
-    (output / "athena.json").write_text(json.dumps(result, indent=2) + "\n")
+    (output / "athena.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))
     return 0
 

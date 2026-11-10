@@ -92,9 +92,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Baixar imagem Glue com retentativas
+        run: bash tools/pull_glue_image.sh
       - name: Executar jobs e compatibilidade do SDK
         run: |
-          docker run --rm --network none --memory 4g --cpus 2 \
+          docker run --rm --pull=never --network none --memory 4g --cpus 2 \
             -v "$PWD:/workspace:ro" --workdir /workspace \
             -e SPARK_LOCAL_IP=127.0.0.1 --entrypoint /bin/bash \
             public.ecr.aws/glue/aws-glue-libs:5 \
@@ -108,23 +110,25 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Baixar imagem Glue com retentativas
+        run: bash tools/pull_glue_image.sh
       - name: Validar Bronze — sintaxe, imports e tabela em memória
         run: |
-          docker run --rm --network none --memory 4g --cpus 2 \
+          docker run --rm --pull=never --network none --memory 4g --cpus 2 \
             -v "$PWD:/workspace:ro" --workdir /workspace \
             -e SPARK_LOCAL_IP=127.0.0.1 --entrypoint /bin/bash \
             public.ecr.aws/glue/aws-glue-libs:5 \
             -lc 'export PYTHONPATH="/workspace:${PYTHONPATH}"; python3 -m unittest tests_aws.test_medallion_syntax.MedallionSyntaxTests.test_bronze -v && spark-submit --master local[2] tools/run_spark_tests.py --suite smoke --layer bronze'
       - name: Validar Silver — sintaxe, imports e tabela em memória
         run: |
-          docker run --rm --network none --memory 4g --cpus 2 \
+          docker run --rm --pull=never --network none --memory 4g --cpus 2 \
             -v "$PWD:/workspace:ro" --workdir /workspace \
             -e SPARK_LOCAL_IP=127.0.0.1 --entrypoint /bin/bash \
             public.ecr.aws/glue/aws-glue-libs:5 \
             -lc 'export PYTHONPATH="/workspace:${PYTHONPATH}"; python3 -m unittest tests_aws.test_medallion_syntax.MedallionSyntaxTests.test_silver -v && spark-submit --master local[2] tools/run_spark_tests.py --suite smoke --layer silver'
       - name: Validar Gold — sintaxe, imports e tabela em memória
         run: |
-          docker run --rm --network none --memory 4g --cpus 2 \
+          docker run --rm --pull=never --network none --memory 4g --cpus 2 \
             -v "$PWD:/workspace:ro" --workdir /workspace \
             -e SPARK_LOCAL_IP=127.0.0.1 --entrypoint /bin/bash \
             public.ecr.aws/glue/aws-glue-libs:5 \

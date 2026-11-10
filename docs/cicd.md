@@ -12,6 +12,8 @@ A execução manual (`workflow_dispatch`) na `main` habilita o deploy mesmo sem 
 4. **Deploy da main, quando habilitado pelo filtro ou pela execução manual:** autenticação OIDC, conferência da conta, espera por uma janela sem cargas/fila pendentes, plano/aplicação Terraform e atualização das views Athena.
 5. **Conferência e rastreabilidade:** versão dos três jobs, Workflow e Lambda e presença das tabelas; arquivo do commit completo em `s3://<artifacts_bucket>/commits/<sha>/source.tar.gz`; resultado do deploy nos artefatos do GitHub Actions.
 
+Os dois jobs Spark baixam a imagem Glue em um step próprio, com até cinco tentativas e esperas de 10, 20, 40 e 80 segundos entre falhas. Isso permite recuperar limites temporários do registro público (`toomanyrequests: Rate exceeded`). Os contêineres de teste usam a imagem já baixada, com `--pull=never`; falhas dos testes continuam interrompendo o job sem repetição automática. Se o download continuar falhando após a quinta tentativa, o CI falha e bloqueia o deploy.
+
 O processamento de dados continua sendo disparado pelo upload de um Excel no S3 em `landing/`. Um deploy publica o código e a infraestrutura, sem reenviar automaticamente a base ou gerar uma nova fotografia econômica. Para o upload pelo console, não é necessário configurar o ambiente Python ou recuperar `deployment.json` no computador.
 
 ## Identidade e estado
